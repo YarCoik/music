@@ -1212,7 +1212,7 @@
       return match ? match[1] : null;
     }
 
-    // Резолвер треков из Apple Music / Яндекс Музыки / Текста в YouTube видео
+// Резолвер треков из Apple Music / Яндекс Музыки / Текста в YouTube
     smartMusicSearchForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const rawInput = inputSmartQuery.value.trim();
@@ -1222,7 +1222,7 @@
       smartResultsContainer.innerHTML = `
         <div class="flex flex-col items-center justify-center p-8 space-y-3">
           <i class="fa-solid fa-compact-disc text-3xl text-brand-accent animate-spin-slow"></i>
-          <span class="text-xs text-slate-400 font-medium">Распознавание ссылки и поиск на YouTube...</span>
+          <span class="text-xs text-slate-400 font-medium">Поиск трека на YouTube...</span>
         </div>
       `;
 
@@ -1230,7 +1230,20 @@
         let finalQuery = rawInput;
         let directYtId = extractYouTubeId(rawInput);
 
-        // 1. Проверяем ссылку на Apple Music
+        // 1. Если вставили готовую ссылку на YouTube — сразу добавляем без лишних запросов
+        if (directYtId) {
+          addTrackToPlaylist({
+            id: 'yt-' + directYtId,
+            title: 'YouTube Трек',
+            artist: 'YouTube Video',
+            youtubeId: directYtId,
+            artwork: `https://i.ytimg.com/vi/${directYtId}/hqdefault.jpg`,
+            duration: 'Full'
+          });
+          return;
+        }
+
+        // 2. Если ссылка из Apple Music — через iTunes API (у него 100% открыт CORS) достаем название песни
         if (rawInput.includes('music.apple.com')) {
           const trackMatch = rawInput.match(/i=(\d+)/) || rawInput.match(/\/song\/[^\/]+\/(\d+)/);
           if (trackMatch && trackMatch[1]) {
@@ -1242,85 +1255,68 @@
                 finalQuery = `${item.artistName} - ${item.trackName}`;
               }
             } catch (err) {
-              console.warn("iTunes lookup err:", err);
+              console.warn("iTunes lookup:", err);
             }
           }
         } 
-        // 2. Проверяем ссылку на Яндекс Музыку
+        // 3. Если ссылка из Яндекс Музыки — чистим URL, оставляя название трека
         else if (rawInput.includes('music.yandex.ru')) {
-          const matchTitle = rawInput.match(/\/track\/(\d+)/);
-          finalQuery = rawInput.replace(/https?:\/\/music\.yandex\.ru[^\s]+/gi, '').trim() || 'Yandex Track ' + (matchTitle ? matchTitle[1] : '');
-          showToast("Поиск трека с Яндекс Музыки в каталоге YouTube...", "info");
+          const matchY = rawInput.match(/track\/(\d+)/);
+          finalQuery = rawInput.replace(/https?:\/\/music\.yandex\.ru[^\s]+/gi, '').trim() || (matchY ? `track ${matchY[1]}` : rawInput);
         }
-
-        // Если вставили прямую ссылку на YouTube
-        if (directYtId) {
-          addTrackToPlaylist({
-            id: 'yt-' + directYtId,
-            title: 'YouTube Track',
-            artist: 'YouTube Music',
-            youtubeId: directYtId,
-            artwork: `https://i.ytimg.com/vi/${directYtId}/hqdefault.jpg`,
-            duration: 'Full'
-          });
-          return;
-        }
-
-        // 3. Выполняем автопоиск через открытые зеркала Piped / Invidious для получения реального videoId
-        const searchMirrors = [
-          `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(finalQuery)}&filter=music_songs`,
-          `https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(finalQuery)}&type=video`,
-          `https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(finalQuery)}&type=video`
-        ];
 
         let foundList = [];
 
-        for (const mirror of searchMirrors) {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3500);
-            const res = await fetch(mirror, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            if (!res.ok) continue;
-
+        // Способ А: Открытый YouTube API с поддержкой CORS (Lemnoslife noKey API)
+        try {
+          const apiUrl = `https://yt.lemnoslife.com/noKey/search?part=snippet&q=${encodeURIComponent(finalQuery)}&type=video`;
+          const res = await fetch(apiUrl);
+          if (res.ok) {
             const data = await res.json();
-            
-            // Piped формат
             if (data.items && data.items.length > 0) {
-              foundList = data.items.slice(0, 5).map(item => {
-                const vId = item.url ? item.url.replace('/watch?v=', '') : item.id;
-                return {
-                  title: item.title,
-                  artist: item.uploaderName || 'YouTube Artist',
-                  youtubeId: vId,
-                  artwork: item.thumbnail || `https://i.ytimg.com/vi/${vId}/hqdefault.jpg`,
-                  duration: formatTime(item.duration || 210)
-                };
-              });
-              break;
+              foundList = data.items.slice(0, 6).map(item => ({
+                title: item.snippet?.title || 'YouTube Music',
+                artist: item.snippet?.channelTitle || 'YouTube',
+                youtubeId: item.id?.videoId,
+                artwork: item.snippet?.thumbnails?.medium?.url || `https://i.ytimg.com/vi/${item.id?.videoId}/hqdefault.jpg`,
+                duration: 'Full'
+              })).filter(t => Boolean(t.youtubeId));
             }
-
-            // Invidious формат
-            if (Array.isArray(data) && data.length > 0) {
-              foundList = data.slice(0, 5).map(item => ({
-                title: item.title,
-                artist: item.author || 'YouTube Artist',
-                youtubeId: item.videoId,
-                artwork: (item.videoThumbnails && item.videoThumbnails[0]?.url) || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
-                duration: formatTime(item.lengthSeconds || 210)
-              }));
-              break;
-            }
-          } catch (e) {}
+          }
+        } catch (e) {
+          console.warn("Lemnoslife search error:", e);
         }
 
+        // Способ Б: Резерв через быстрый CORS-прокси к YouTube
+        if (foundList.length === 0) {
+          try {
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent('https://www.youtube.com/results?search_query=' + finalQuery)}`;
+            const res = await fetch(proxyUrl);
+            if (res.ok) {
+              const html = await res.text();
+              const matches = [...html.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g)].map(m => m[1]);
+              const uniqueIds = [...new Set(matches)].slice(0, 5);
+
+              foundList = uniqueIds.map((vId, idx) => ({
+                title: `${finalQuery} (Вариант ${idx + 1})`,
+                artist: 'YouTube Audio',
+                youtubeId: vId,
+                artwork: `https://i.ytimg.com/vi/${vId}/hqdefault.jpg`,
+                duration: 'Full'
+              }));
+            }
+          } catch (e) {
+            console.warn("Proxy fallback error:", e);
+          }
+        }
+
+        // Способ В: Если прокси тупят — ищем через iTunes, чтобы юзер видел треки и мог добавить
         if (foundList.length > 0) {
           renderSearchResults(foundList);
         } else {
-          // Запасной вариант: iTunes метаданные + поиск
-          const itunesFallback = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(finalQuery)}&entity=song&limit=4`);
-          const itunesJson = await itunesFallback.json();
-          
+          const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(finalQuery)}&entity=song&limit=5`);
+          const itunesJson = await itunesRes.json();
+
           if (itunesJson.results && itunesJson.results.length > 0) {
             renderiTunesFallback(itunesJson.results);
           } else {
@@ -1328,14 +1324,19 @@
               <div class="text-center p-6 text-slate-400 text-xs bg-dark-bg/80 border border-dark-border rounded-2xl">
                 <i class="fa-brands fa-youtube text-2xl mb-2 text-red-500"></i>
                 <p class="font-semibold text-white">Трек не найден</p>
-                <p class="text-[11px] mt-1 text-slate-400">Попробуйте скопировать точное название трека или вставьте прямую ссылку с YouTube.</p>
+                <p class="text-[11px] mt-1 text-slate-400">Вставьте прямую ссылку на видео с YouTube или уточните запрос.</p>
               </div>
             `;
           }
         }
 
       } catch (err) {
-        console.warn("Search overall error:", err);
+        console.error("Search error:", err);
+        smartResultsContainer.innerHTML = `
+          <div class="text-center p-6 text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-2xl">
+            <p>Ошибка сети при поиске. Попробуйте вставить прямую ссылку на клип с YouTube.</p>
+          </div>
+        `;
       } finally {
         searchBtnSpinner.classList.add('hidden');
       }
