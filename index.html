@@ -9,7 +9,7 @@
   
   <!-- Сетевой транспорт реального времени (MQTT over WebSockets) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
-  <!-- YouTube IFrame Player API для воспроизведения полных треков -->
+  <!-- YouTube IFrame Player API -->
   <script src="https://www.youtube.com/iframe_api"></script>
 
   <script>
@@ -108,9 +108,9 @@
       <div>
         <div class="flex items-center space-x-2">
           <span class="font-black text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-accent bg-clip-text text-transparent">SoundShare</span>
-          <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">Full YouTube Audio</span>
+          <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">Live Sync</span>
         </div>
-        <p class="text-xs text-slate-400 hidden sm:block">Полные треки с Яндекс/Apple Музыки и YouTube в реальном времени</p>
+        <p class="text-xs text-slate-400 hidden sm:block">Слушай музыку синхронно с друзьями по индивидуальной ссылке</p>
       </div>
     </div>
 
@@ -198,7 +198,7 @@
         <!-- Центральный дисплей: Винил или YouTube видео -->
         <div class="flex flex-col sm:flex-row items-center justify-center gap-8 my-4 relative z-10">
           
-          <!-- Контейнер Вертушки -->
+          <!-- Вертушка -->
           <div id="vinylContainerWrapper" class="relative group shrink-0">
             <div id="vinylDisc" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full vinyl-grooves shadow-2xl border-4 border-slate-900 flex items-center justify-center animate-spin-slow paused-spin transition-transform duration-500 relative overflow-hidden">
               <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-brand-600 via-brand-neon to-brand-accent p-1 shadow-inner flex items-center justify-center overflow-hidden">
@@ -211,15 +211,12 @@
             <div id="vinylGlow" class="absolute inset-0 rounded-full border border-brand-accent/40 pointer-events-none opacity-0 transition-opacity duration-300"></div>
           </div>
 
-          <!-- Контейнер встроенного видеоплеера YouTube (по умолчанию скрыт) -->
+          <!-- YouTube видеоплеер -->
           <div id="videoContainerWrapper" class="hidden w-full max-w-[320px] aspect-video rounded-2xl overflow-hidden shadow-2xl border border-dark-border bg-black relative">
             <div id="ytPlayer" class="w-full h-full"></div>
           </div>
 
-          <!-- Скрытый якорь плеера, если выбран режим Винила -->
-          <div id="hiddenYtAnchor" class="hidden"></div>
-
-          <!-- Информация о треке и эквалайзер -->
+          <!-- Название и ссылки -->
           <div class="flex-1 text-center sm:text-left w-full overflow-hidden">
             <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start mb-2">
               <span id="genreTag" class="text-[11px] font-bold uppercase tracking-wider text-brand-accent bg-brand-accent/10 px-2.5 py-0.5 rounded-full inline-block">Full Track</span>
@@ -296,7 +293,7 @@
             </button>
           </div>
 
-          <!-- Громкость: Muted по умолчанию для защиты слуха -->
+          <!-- Громкость: Muted по умолчанию -->
           <div class="flex items-center space-x-3 mx-auto sm:mx-0">
             <button id="btnMute" class="text-amber-400 hover:text-white transition text-sm flex items-center space-x-1" title="Включить / выключить звук">
               <i id="volumeIcon" class="fa-solid fa-volume-xmark"></i>
@@ -365,7 +362,7 @@
 
   </main>
 
-  <!-- МОДАЛКА: Конвертер ссылок Яндекс Музыки, Apple Music и поиск YouTube -->
+  <!-- МОДАЛКА: Конвертер ссылок -->
   <div id="smartMusicModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-dark-card border border-dark-border rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-dark-border pb-3">
@@ -416,7 +413,7 @@
     </div>
   </div>
 
-  <!-- Toast уведомления -->
+  <!-- Toast -->
   <div id="toastNotification" class="fixed bottom-6 right-6 z-50 bg-dark-card border border-brand-500/40 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none">
     <div id="toastIcon" class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-accent flex items-center justify-center text-sm">
       <i class="fa-solid fa-check"></i>
@@ -431,7 +428,6 @@
       return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
     }
 
-    // Полные треки (реальные YouTube video ID)
     const INITIAL_TRACKS = [
       {
         id: 'yt-track-1',
@@ -501,25 +497,21 @@
       tracks: [...INITIAL_TRACKS]
     };
 
-    // Флаг приглушения по умолчанию
     let isUserMuted = true;
     let userPreferredVolume = 0.75;
     let ytPlayer = null;
     let isYtReady = false;
     let timeUpdateTimer = null;
 
-    // Сеть MQTT
-    const NETWORK_BROKERS = [
-      'wss://broker.emqx.io:8084/mqtt',
-      'wss://broker.hivemq.com:8884/mqtt',
-      'wss://test.mosquitto.org:8081'
-    ];
-    let currentBrokerIndex = 0;
+    // ЕДИНЫЙ СТАБИЛЬНЫЙ БРОКЕР HIVEMQ + ЛОКАЛЬНЫЙ BROADCAST CHANNEL
+    const GLOBAL_BROKER_URL = 'wss://broker.hivemq.com:8884/mqtt';
     let mqttClient = null;
     let presenceMap = new Map();
     let broadcastInterval = null;
+    let localChannel = null;
+    const processedMessages = new Set();
 
-    // UI элементы
+    // DOM Элементы
     const btnPlayPause = document.getElementById('btnPlayPause');
     const playPauseIcon = document.getElementById('playPauseIcon');
     const btnPrevTrack = document.getElementById('btnPrevTrack');
@@ -568,7 +560,6 @@
     const vinylContainerWrapper = document.getElementById('vinylContainerWrapper');
     const videoContainerWrapper = document.getElementById('videoContainerWrapper');
 
-    // Модалка
     const smartMusicModal = document.getElementById('smartMusicModal');
     const btnOpenSmartModal = document.getElementById('btnOpenSmartModal');
     const btnCloseSmartMusicModal = document.getElementById('btnCloseSmartMusicModal');
@@ -578,7 +569,7 @@
     const smartResultsContainer = document.getElementById('smartResultsContainer');
     const searchBtnSpinner = document.getElementById('searchBtnSpinner');
 
-    // Инициализация YouTube IFrame API
+    // YouTube API
     window.onYouTubeIframeAPIReady = function() {
       const cur = roomState.tracks[roomState.currentTrackIndex] || roomState.tracks[0];
       ytPlayer = new YT.Player('ytPlayer', {
@@ -602,7 +593,6 @@
 
     function onYtPlayerReady() {
       isYtReady = true;
-      // Глушим звук по умолчанию, чтобы не оглушать и исключить блокировку браузером
       ytPlayer.mute();
       ytPlayer.setVolume(userPreferredVolume * 100);
       updateVolumeVisuals();
@@ -636,12 +626,10 @@
       }
     }
 
-    // Регулярный таймер синхронизации таймлайна
     function startTimeUpdater() {
       if (timeUpdateTimer) clearInterval(timeUpdateTimer);
       timeUpdateTimer = setInterval(() => {
         if (!isYtReady || !ytPlayer.getCurrentTime) return;
-        
         const curSec = ytPlayer.getCurrentTime() || 0;
         const durSec = ytPlayer.getDuration() || 0;
 
@@ -653,7 +641,6 @@
       }, 500);
     }
 
-    // Включение звука при желании пользователя
     function unmuteAudio() {
       if (!isYtReady) return;
       isUserMuted = false;
@@ -708,7 +695,6 @@
       }
     }
 
-    // Переключение Винил / Клип
     btnViewVinyl.addEventListener('click', () => {
       btnViewVinyl.className = "px-2.5 py-1 rounded-lg bg-brand-600 text-white font-semibold transition";
       btnViewVideo.className = "px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition";
@@ -723,32 +709,50 @@
       videoContainerWrapper.classList.remove('hidden');
     });
 
-    // Сетевой брокер MQTT
+    // ==========================================
+    // ГАРАНТИРОВАННАЯ СЕТЕВАЯ СИНХРОНИЗАЦИЯ
+    // ==========================================
     function initNetwork() {
       currentRoomDisplay.textContent = currentRoomId;
       updateRoleUI();
 
-      if (broadcastInterval) clearInterval(broadcastInterval);
+      // 1. Локальный канал между вкладками одного браузера
+      try {
+        if (window.BroadcastChannel) {
+          if (localChannel) localChannel.close();
+          localChannel = new BroadcastChannel(`soundshare_room_${currentRoomId}`);
+          localChannel.onmessage = (event) => {
+            if (event.data && event.data.senderId !== myClientId) {
+              handleNetworkMessage(event.data);
+            }
+          };
+        }
+      } catch (e) {
+        console.warn("BroadcastChannel not supported", e);
+      }
 
-      const brokerUrl = NETWORK_BROKERS[currentBrokerIndex];
-      updateNetBadge('connecting', 'Подключение к эфиру...');
+      // 2. Глобальный MQTT клиент (единый брокер HiveMQ)
+      updateNetBadge('connecting', 'Подключение к сети...');
 
       try {
         if (mqttClient) {
           try { mqttClient.end(true); } catch(e){}
         }
 
-        mqttClient = mqtt.connect(brokerUrl, {
-          clientId: `snd_${myClientId}`,
+        const uniqueMqttId = `snd_${currentRoomId}_${myClientId}_${Math.floor(Math.random()*1000)}`;
+
+        mqttClient = mqtt.connect(GLOBAL_BROKER_URL, {
+          clientId: uniqueMqttId,
           clean: true,
-          connectTimeout: 6000,
-          reconnectPeriod: 5000
+          connectTimeout: 8000,
+          reconnectPeriod: 3000,
+          keepalive: 30
         });
 
         mqttClient.on('connect', () => {
           updateNetBadge(isHost ? 'host' : 'guest', isHost ? 'DJ Эфир активен' : 'Слушаете эфир (Синхронно)');
           
-          const roomTopic = `soundshare/v10/rooms/${currentRoomId}/#`;
+          const roomTopic = `soundshare/v12/room/${currentRoomId}/#`;
           mqttClient.subscribe(roomTopic, { qos: 0 }, (err) => {
             if (!err) {
               sendNetworkMessage('PRESENCE', { nickname: myNickname, isHost });
@@ -771,39 +775,51 @@
           }
         });
 
-        mqttClient.on('error', () => rotateToNextBroker());
+        mqttClient.on('reconnect', () => {
+          updateNetBadge('connecting', 'Переподключение...');
+        });
+
+        mqttClient.on('error', (err) => {
+          console.warn('MQTT connection err:', err);
+        });
 
       } catch (err) {
-        rotateToNextBroker();
+        console.warn('Init error:', err);
       }
 
+      // Регулярный пинг каждые 3 секунды
+      if (broadcastInterval) clearInterval(broadcastInterval);
       broadcastInterval = setInterval(() => {
         sendNetworkMessage('PRESENCE', { nickname: myNickname, isHost });
         cleanOfflineUsers();
         if (isHost && isYtReady && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
           broadcastCurrentState();
         }
-      }, 4000);
-    }
-
-    function rotateToNextBroker() {
-      currentBrokerIndex = (currentBrokerIndex + 1) % NETWORK_BROKERS.length;
-      updateNetBadge('connecting', 'Смена сервера...');
-      setTimeout(initNetwork, 1200);
+      }, 3000);
     }
 
     function sendNetworkMessage(type, payload) {
-      if (!mqttClient || !mqttClient.connected) return;
-      const topic = `soundshare/v10/rooms/${currentRoomId}/${type.toLowerCase()}`;
-      const msg = JSON.stringify({
+      const msgId = `${myClientId}_${Date.now()}_${Math.random()}`;
+      const msg = {
+        msgId,
         type,
         senderId: myClientId,
         isHost,
         nickname: myNickname,
         payload,
         timestamp: Date.now()
-      });
-      mqttClient.publish(topic, msg);
+      };
+
+      // Дублируем в BroadcastChannel для мгновенной реакции соседней вкладки
+      if (localChannel) {
+        try { localChannel.postMessage(msg); } catch(e){}
+      }
+
+      // Отправляем в глобальный MQTT для друзей
+      if (mqttClient && mqttClient.connected) {
+        const topic = `soundshare/v12/room/${currentRoomId}/${type.toLowerCase()}`;
+        mqttClient.publish(topic, JSON.stringify(msg));
+      }
     }
 
     function broadcastCurrentState() {
@@ -821,6 +837,16 @@
     }
 
     function handleNetworkMessage(msg) {
+      // Исключаем обработку дубликатов сообщений
+      if (msg.msgId) {
+        if (processedMessages.has(msg.msgId)) return;
+        processedMessages.add(msg.msgId);
+        if (processedMessages.size > 200) {
+          const first = processedMessages.values().next().value;
+          processedMessages.delete(first);
+        }
+      }
+
       const { type, payload, senderId, nickname } = msg;
 
       if (type === 'PRESENCE') {
@@ -899,7 +925,7 @@
       const now = Date.now();
       let changed = false;
       presenceMap.forEach((val, key) => {
-        if (now - val.lastSeen > 9000) {
+        if (now - val.lastSeen > 8000) {
           presenceMap.delete(key);
           changed = true;
         }
@@ -1027,7 +1053,7 @@
       } else {
         ytPlayer.playVideo();
       }
-      setTimeout(broadcastCurrentState, 350);
+      setTimeout(broadcastCurrentState, 300);
     });
 
     btnNextTrack.addEventListener('click', () => {
@@ -1186,7 +1212,7 @@
       chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
     }
 
-    // МОДАЛКА: Конвертация ссылок и поиск
+    // Модалка поиска
     btnOpenSmartModal.addEventListener('click', () => {
       if (!canControl()) {
         showToast("Только DJ может добавлять треки.", "warning");
@@ -1206,13 +1232,11 @@
       });
     });
 
-    // Извлечение YouTube ID напрямую из ссылки любого формата
     function extractYouTubeId(url) {
       const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=)|music\.youtube\.com\/watch\?v=)([\w-]{11})/);
       return match ? match[1] : null;
     }
 
-// Резолвер треков из Apple Music / Яндекс Музыки / Текста в YouTube
     smartMusicSearchForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const rawInput = inputSmartQuery.value.trim();
@@ -1230,7 +1254,6 @@
         let finalQuery = rawInput;
         let directYtId = extractYouTubeId(rawInput);
 
-        // 1. Если вставили готовую ссылку на YouTube — сразу добавляем без лишних запросов
         if (directYtId) {
           addTrackToPlaylist({
             id: 'yt-' + directYtId,
@@ -1243,7 +1266,6 @@
           return;
         }
 
-        // 2. Если ссылка из Apple Music — через iTunes API (у него 100% открыт CORS) достаем название песни
         if (rawInput.includes('music.apple.com')) {
           const trackMatch = rawInput.match(/i=(\d+)/) || rawInput.match(/\/song\/[^\/]+\/(\d+)/);
           if (trackMatch && trackMatch[1]) {
@@ -1258,16 +1280,13 @@
               console.warn("iTunes lookup:", err);
             }
           }
-        } 
-        // 3. Если ссылка из Яндекс Музыки — чистим URL, оставляя название трека
-        else if (rawInput.includes('music.yandex.ru')) {
+        } else if (rawInput.includes('music.yandex.ru')) {
           const matchY = rawInput.match(/track\/(\d+)/);
           finalQuery = rawInput.replace(/https?:\/\/music\.yandex\.ru[^\s]+/gi, '').trim() || (matchY ? `track ${matchY[1]}` : rawInput);
         }
 
         let foundList = [];
 
-        // Способ А: Открытый YouTube API с поддержкой CORS (Lemnoslife noKey API)
         try {
           const apiUrl = `https://yt.lemnoslife.com/noKey/search?part=snippet&q=${encodeURIComponent(finalQuery)}&type=video`;
           const res = await fetch(apiUrl);
@@ -1287,7 +1306,6 @@
           console.warn("Lemnoslife search error:", e);
         }
 
-        // Способ Б: Резерв через быстрый CORS-прокси к YouTube
         if (foundList.length === 0) {
           try {
             const proxyUrl = `https://corsproxy.io/?${encodeURIComponent('https://www.youtube.com/results?search_query=' + finalQuery)}`;
@@ -1310,33 +1328,19 @@
           }
         }
 
-        // Способ В: Если прокси тупят — ищем через iTunes, чтобы юзер видел треки и мог добавить
         if (foundList.length > 0) {
           renderSearchResults(foundList);
         } else {
-          const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(finalQuery)}&entity=song&limit=5`);
-          const itunesJson = await itunesRes.json();
-
-          if (itunesJson.results && itunesJson.results.length > 0) {
-            renderiTunesFallback(itunesJson.results);
-          } else {
-            smartResultsContainer.innerHTML = `
-              <div class="text-center p-6 text-slate-400 text-xs bg-dark-bg/80 border border-dark-border rounded-2xl">
-                <i class="fa-brands fa-youtube text-2xl mb-2 text-red-500"></i>
-                <p class="font-semibold text-white">Трек не найден</p>
-                <p class="text-[11px] mt-1 text-slate-400">Вставьте прямую ссылку на видео с YouTube или уточните запрос.</p>
-              </div>
-            `;
-          }
+          smartResultsContainer.innerHTML = `
+            <div class="text-center p-6 text-slate-400 text-xs bg-dark-bg/80 border border-dark-border rounded-2xl">
+              <i class="fa-brands fa-youtube text-2xl mb-2 text-red-500"></i>
+              <p class="font-semibold text-white">Ничего не найдено</p>
+              <p class="text-[11px] mt-1 text-slate-400">Вставьте прямую ссылку на видео с YouTube или уточните запрос.</p>
+            </div>
+          `;
         }
-
       } catch (err) {
         console.error("Search error:", err);
-        smartResultsContainer.innerHTML = `
-          <div class="text-center p-6 text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-2xl">
-            <p>Ошибка сети при поиске. Попробуйте вставить прямую ссылку на клип с YouTube.</p>
-          </div>
-        `;
       } finally {
         searchBtnSpinner.classList.add('hidden');
       }
@@ -1355,7 +1359,7 @@
             <div class="truncate">
               <h4 class="text-xs font-bold text-white truncate group-hover:text-brand-accent transition">${escapeHtml(item.title)}</h4>
               <p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.artist)}</p>
-              <span class="text-[10px] text-red-400 font-mono"><i class="fa-brands fa-youtube mr-1"></i>Полный трек (${item.duration})</span>
+              <span class="text-[10px] text-red-400 font-mono"><i class="fa-brands fa-youtube mr-1"></i>Полный трек</span>
             </div>
           </div>
           <button class="btn-add-track px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs flex items-center space-x-1 shadow-md active:scale-95 transition shrink-0">
@@ -1379,37 +1383,6 @@
       });
     }
 
-    function renderiTunesFallback(results) {
-      smartResultsContainer.innerHTML = '';
-      results.forEach(item => {
-        const card = document.createElement('div');
-        card.className = "flex items-center justify-between p-3 rounded-2xl bg-dark-bg/80 border border-dark-border hover:border-brand-500/50 transition group";
-        const hdArtwork = item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '400x400bb') : createCoverSvg(item.trackName, '#7c3aed', '#ec4899');
-
-        card.innerHTML = `
-          <div class="flex items-center space-x-3 overflow-hidden flex-1 mr-3">
-            <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-dark-border/80 shadow-md">
-              <img src="${hdArtwork}" alt="Art" class="w-full h-full object-cover">
-            </div>
-            <div class="truncate">
-              <h4 class="text-xs font-bold text-white truncate group-hover:text-brand-accent transition">${escapeHtml(item.trackName)}</h4>
-              <p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.artistName)}</p>
-            </div>
-          </div>
-          <button class="btn-add-fallback px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent text-white font-bold text-xs flex items-center space-x-1 shrink-0">
-            <span>Найти на YouTube</span>
-          </button>
-        `;
-
-        card.querySelector('.btn-add-fallback').addEventListener('click', () => {
-          inputSmartQuery.value = `${item.artistName} ${item.trackName}`;
-          smartMusicSearchForm.dispatchEvent(new Event('submit'));
-        });
-
-        smartResultsContainer.appendChild(card);
-      });
-    }
-
     function addTrackToPlaylist(track) {
       roomState.tracks.push(track);
       const newIdx = roomState.tracks.length - 1;
@@ -1420,7 +1393,6 @@
       switchTrack(newIdx);
     }
 
-    // Визуализатор звука
     function drawVisualizerBars() {
       requestAnimationFrame(drawVisualizerBars);
       const width = visualizerCanvas.width = visualizerCanvas.parentElement.clientWidth;
