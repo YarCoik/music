@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SoundShare — Совместное прослушивание музыки</title>
+  <title>SoundShare — Совместное прослушивание полных треков</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Сетевой транспорт реального времени (MQTT over WebSockets) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+  <!-- YouTube IFrame Player API для воспроизведения полных треков -->
+  <script src="https://www.youtube.com/iframe_api"></script>
 
   <script>
     tailwind.config = {
@@ -55,25 +57,12 @@
   </script>
 
   <style>
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #0d111d;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #2b3553;
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #7c3aed;
-    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0d111d; }
+    ::-webkit-scrollbar-thumb { background: #2b3553; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
 
-    input[type=range] {
-      -webkit-appearance: none;
-      background: transparent;
-    }
+    input[type=range] { -webkit-appearance: none; background: transparent; }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
       height: 14px;
@@ -101,14 +90,10 @@
       cursor: not-allowed;
       background: #151a29;
     }
-
     .vinyl-grooves {
       background: radial-gradient(circle, #0f121d 26%, #1e2436 29%, #0f121d 33%, #1e2436 41%, #0f121d 45%, #1e2436 57%, #0f121d 62%, #1e2436 76%, #0a0d15 82%);
     }
-
-    .paused-spin {
-      animation-play-state: paused !important;
-    }
+    .paused-spin { animation-play-state: paused !important; }
   </style>
 </head>
 
@@ -123,9 +108,9 @@
       <div>
         <div class="flex items-center space-x-2">
           <span class="font-black text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-accent bg-clip-text text-transparent">SoundShare</span>
-          <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">Оригинал Live</span>
+          <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">Full YouTube Audio</span>
         </div>
-        <p class="text-xs text-slate-400 hidden sm:block">Синхронное прослушивание полных треков без ограничений</p>
+        <p class="text-xs text-slate-400 hidden sm:block">Полные треки с Яндекс/Apple Музыки и YouTube в реальном времени</p>
       </div>
     </div>
 
@@ -157,16 +142,16 @@
     </div>
   </header>
 
-  <!-- Предупреждение о политике Autoplay -->
-  <div id="audioUnlockBanner" class="hidden bg-gradient-to-r from-amber-600 to-rose-600 text-white px-4 py-3 text-center text-xs sm:text-sm font-medium z-50 flex items-center justify-center space-x-3 shadow-lg cursor-pointer transition">
-    <i class="fa-solid fa-volume-high text-lg animate-bounce"></i>
-    <span>Браузер ожидает нажатия для включения звука. <strong>Кликните в любом месте, чтобы слушать синхронно!</strong></span>
+  <!-- Индикатор режима Muted по умолчанию -->
+  <div id="unmuteTipBanner" class="bg-gradient-to-r from-brand-600 via-brand-500 to-brand-accent text-white px-4 py-2.5 text-center text-xs sm:text-sm font-medium z-30 flex items-center justify-center space-x-3 shadow-md cursor-pointer transition">
+    <i class="fa-solid fa-volume-xmark text-base text-amber-300 animate-pulse"></i>
+    <span>Звук по умолчанию приглушен. <strong>Кликните сюда или сдвиньте громкость, чтобы включить!</strong></span>
     <button class="bg-white text-slate-900 text-xs font-bold px-3 py-1 rounded-lg ml-2 shadow">Включить звук</button>
   </div>
 
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
     
-    <!-- ЛЕВАЯ КОЛОНКА: Сцена плеера и визуализатор (7 колонок) -->
+    <!-- ЛЕВАЯ КОЛОНКА: Сцена плеера (7 колонок) -->
     <section class="lg:col-span-7 flex flex-col space-y-6">
       
       <!-- Карточка плеера -->
@@ -174,7 +159,7 @@
         <div class="absolute -top-24 -right-24 w-72 h-72 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-brand-accent/15 rounded-full blur-3xl pointer-events-none"></div>
 
-        <!-- Панель статуса роли -->
+        <!-- Панель статуса роли и переключатель вида Винил/Клип -->
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6 relative z-10">
           <div class="flex items-center space-x-2">
             <span id="myRoleBadge" class="inline-flex items-center text-xs font-bold px-3 py-1 rounded-xl bg-brand-500/20 text-brand-300 border border-brand-500/40 shadow-sm">
@@ -185,9 +170,10 @@
               <i class="fa-solid fa-tower-broadcast mr-1.5 animate-pulse"></i> В эфире
             </span>
 
-            <span id="sourceCatalogBadge" class="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <i class="fa-solid fa-compact-disc text-[10px] mr-1"></i> Прямой поток
-            </span>
+            <div class="bg-dark-bg border border-dark-border rounded-xl p-0.5 flex items-center text-[11px]">
+              <button id="btnViewVinyl" class="px-2.5 py-1 rounded-lg bg-brand-600 text-white font-semibold transition">Винил</button>
+              <button id="btnViewVideo" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition">Клип YouTube</button>
+            </div>
           </div>
 
           <div class="flex items-center space-x-2 text-xs">
@@ -204,14 +190,16 @@
         <div id="guestNoticeBanner" class="hidden mb-4 p-3 rounded-2xl bg-brand-accent/10 border border-brand-accent/30 text-xs text-brand-accent flex items-center justify-between">
           <div class="flex items-center space-x-2">
             <i class="fa-solid fa-headphones-simple text-sm"></i>
-            <span>Вы слушаете эфир DJ. Музыка воспроизводится полностью в реальном времени!</span>
+            <span>Вы в эфире DJ. Музыка синхронизируется в реальном времени!</span>
           </div>
           <span class="text-[10px] bg-brand-accent/20 px-2 py-0.5 rounded-md font-mono">Live Sync</span>
         </div>
 
-        <!-- Вертушка и визуализатор -->
+        <!-- Центральный дисплей: Винил или YouTube видео -->
         <div class="flex flex-col sm:flex-row items-center justify-center gap-8 my-4 relative z-10">
-          <div id="vinylViewContainer" class="relative group shrink-0">
+          
+          <!-- Контейнер Вертушки -->
+          <div id="vinylContainerWrapper" class="relative group shrink-0">
             <div id="vinylDisc" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full vinyl-grooves shadow-2xl border-4 border-slate-900 flex items-center justify-center animate-spin-slow paused-spin transition-transform duration-500 relative overflow-hidden">
               <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-brand-600 via-brand-neon to-brand-accent p-1 shadow-inner flex items-center justify-center overflow-hidden">
                 <div class="w-full h-full rounded-full bg-dark-bg flex items-center justify-center border-2 border-white/20 overflow-hidden relative">
@@ -223,25 +211,38 @@
             <div id="vinylGlow" class="absolute inset-0 rounded-full border border-brand-accent/40 pointer-events-none opacity-0 transition-opacity duration-300"></div>
           </div>
 
+          <!-- Контейнер встроенного видеоплеера YouTube (по умолчанию скрыт) -->
+          <div id="videoContainerWrapper" class="hidden w-full max-w-[320px] aspect-video rounded-2xl overflow-hidden shadow-2xl border border-dark-border bg-black relative">
+            <div id="ytPlayer" class="w-full h-full"></div>
+          </div>
+
+          <!-- Скрытый якорь плеера, если выбран режим Винила -->
+          <div id="hiddenYtAnchor" class="hidden"></div>
+
+          <!-- Информация о треке и эквалайзер -->
           <div class="flex-1 text-center sm:text-left w-full overflow-hidden">
             <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start mb-2">
-              <span id="genreTag" class="text-[11px] font-bold uppercase tracking-wider text-brand-accent bg-brand-accent/10 px-2.5 py-0.5 rounded-full inline-block">Synthwave Chill</span>
-              <span id="sourceBadge" class="text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-full inline-flex items-center space-x-1 bg-brand-500/15 text-brand-300 border border-brand-500/30">
-                <i class="fa-solid fa-circle-nodes mr-1"></i> Direct Master Audio
+              <span id="genreTag" class="text-[11px] font-bold uppercase tracking-wider text-brand-accent bg-brand-accent/10 px-2.5 py-0.5 rounded-full inline-block">Full Track</span>
+              <span id="sourceBadge" class="text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-full inline-flex items-center space-x-1 bg-red-500/15 text-red-400 border border-red-500/30">
+                <i class="fa-brands fa-youtube mr-1"></i> YouTube Audio
               </span>
             </div>
 
-            <h2 id="currentTrackTitle" class="text-xl sm:text-2xl font-extrabold text-white truncate max-w-sm mb-1">SoundHelix Song 1</h2>
-            <p id="currentTrackArtist" class="text-sm font-medium text-slate-400 mb-2">SoundShare Lab</p>
+            <h2 id="currentTrackTitle" class="text-xl sm:text-2xl font-extrabold text-white truncate max-w-sm mb-1">Billie Jean</h2>
+            <p id="currentTrackArtist" class="text-sm font-medium text-slate-400 mb-2">Michael Jackson</p>
 
             <div id="sourceLinksContainer" class="flex items-center space-x-3 mb-3 justify-center sm:justify-start flex-wrap gap-y-1">
               <a id="btnOpenInYandex" href="https://music.yandex.ru" target="_blank" rel="noopener noreferrer" class="text-xs text-red-300 hover:text-white bg-red-600/20 hover:bg-red-600/30 px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1.5 border border-red-500/30">
                 <i class="fa-brands fa-yandex text-sm text-red-500"></i>
-                <span>Яндекс Музыка</span>
+                <span>Яндекс</span>
               </a>
               <a id="btnOpenInApple" href="https://music.apple.com" target="_blank" rel="noopener noreferrer" class="text-xs text-slate-300 hover:text-white bg-white/10 hover:bg-white/15 px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1.5 border border-white/15">
                 <i class="fa-brands fa-apple text-sm"></i>
-                <span>Apple Music</span>
+                <span>Apple</span>
+              </a>
+              <a id="btnOpenInYT" href="#" target="_blank" rel="noopener noreferrer" class="text-xs text-red-400 hover:text-white bg-red-950/40 hover:bg-red-900/50 px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1.5 border border-red-600/40">
+                <i class="fa-brands fa-youtube text-sm"></i>
+                <span>YouTube</span>
               </a>
             </div>
 
@@ -261,9 +262,9 @@
             </div>
             <div id="syncIndicator" class="flex items-center space-x-1.5 text-[11px] text-slate-500 font-sans">
               <i class="fa-solid fa-arrows-rotate text-brand-accent text-[9px]"></i>
-              <span>Синхронизировано в реальном времени</span>
+              <span>Синхронизировано</span>
             </div>
-            <span id="durationDisplay">6:12</span>
+            <span id="durationDisplay">4:54</span>
           </div>
 
           <div class="relative w-full">
@@ -295,11 +296,12 @@
             </button>
           </div>
 
+          <!-- Громкость: Muted по умолчанию для защиты слуха -->
           <div class="flex items-center space-x-3 mx-auto sm:mx-0">
-            <button id="btnMute" class="text-slate-400 hover:text-white transition text-sm">
-              <i id="volumeIcon" class="fa-solid fa-volume-high"></i>
+            <button id="btnMute" class="text-amber-400 hover:text-white transition text-sm flex items-center space-x-1" title="Включить / выключить звук">
+              <i id="volumeIcon" class="fa-solid fa-volume-xmark"></i>
             </button>
-            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.85" class="w-24 h-1.5 rounded-lg cursor-pointer" title="Ваша громкость">
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.75" class="w-24 h-1.5 rounded-lg cursor-pointer" title="Громкость (приглушена при старте)">
           </div>
         </div>
 
@@ -312,21 +314,10 @@
             <button data-emoji="🎧" class="reaction-btn px-2.5 py-1 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border text-lg hover:scale-125 transition active:scale-95">🎧</button>
             <button data-emoji="🚀" class="reaction-btn px-2.5 py-1 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border text-lg hover:scale-125 transition active:scale-95">🚀</button>
             <button data-emoji="❤️" class="reaction-btn px-2.5 py-1 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border text-lg hover:scale-125 transition active:scale-95">❤️</button>
-            <button data-emoji="🍸" class="reaction-btn px-2.5 py-1 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border text-lg hover:scale-125 transition active:scale-95">🍸</button>
           </div>
         </div>
 
         <div id="floatingEmojiContainer" class="pointer-events-none absolute inset-0 overflow-hidden z-30"></div>
-      </div>
-
-      <div class="bg-dark-card/60 border border-dark-border rounded-2xl p-4 text-xs text-slate-400 flex items-start gap-3">
-        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-          <i class="fa-solid fa-circle-check"></i>
-        </div>
-        <div>
-          <span class="text-white font-semibold">Прямая синхронизация аудиопотока:</span>
-          Комната синхронизируется через MQTT в реальном времени. Скопируйте ссылку кнопкой вверху и отправьте другу. Как только он откроет страницу — вы будете слушать один и тот же момент песни вместе!
-        </div>
       </div>
     </section>
 
@@ -342,21 +333,13 @@
             <span id="tracksBadgeCount" class="text-xs bg-dark-bg text-slate-400 px-2 py-0.5 rounded-md border border-dark-border">3 трека</span>
           </div>
 
-          <div class="flex items-center space-x-1.5">
-            <button id="btnOpenPlaylistImportModal" class="text-xs text-white bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 px-3 py-1 rounded-xl transition flex items-center space-x-1.5 font-bold shadow-md shadow-brand-600/30">
-              <i class="fa-solid fa-folder-plus text-[11px]"></i>
-              <span>Импорт плейлиста</span>
-            </button>
-            <button id="btnOpenStreamImportModal" class="text-xs text-brand-accent hover:text-white bg-brand-accent/10 hover:bg-brand-accent/20 border border-brand-accent/30 px-2.5 py-1 rounded-xl transition flex items-center space-x-1">
-              <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
-              <span>Поиск</span>
-            </button>
-          </div>
+          <button id="btnOpenSmartModal" class="text-xs text-white bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 px-3 py-1.5 rounded-xl transition flex items-center space-x-1.5 font-bold shadow-md shadow-brand-600/30">
+            <i class="fa-solid fa-plus text-[10px]"></i>
+            <span>Добавить трек / ссылку</span>
+          </button>
         </div>
 
-        <div id="playlistContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 mt-3">
-          <!-- Треки генерируются из JS -->
-        </div>
+        <div id="playlistContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 mt-3"></div>
       </div>
 
       <!-- Чат -->
@@ -369,9 +352,7 @@
           <span class="text-[11px] text-slate-400">Live Chat</span>
         </div>
 
-        <div id="chatMessagesContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 mt-3 text-xs">
-          <!-- Сообщения -->
-        </div>
+        <div id="chatMessagesContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 mt-3 text-xs"></div>
 
         <form id="chatForm" class="mt-3 pt-2 border-t border-dark-border/60 flex items-center gap-2">
           <input type="text" id="chatInput" placeholder="Написать сообщение друзьям..." maxlength="120" autocomplete="off" class="flex-1 bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition">
@@ -384,110 +365,17 @@
 
   </main>
 
-  <!-- МОДАЛКА: ИМПОРТ ПЛЕЙЛИСТА (Яндекс / Apple / Список / MP3 папка) -->
-  <div id="playlistImportModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-dark-card border border-dark-border rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
-      <div class="flex items-center justify-between border-b border-dark-border pb-3">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-accent flex items-center justify-center text-white text-base shadow-md">
-            <i class="fa-solid fa-list-check"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-white text-base">Импорт целого плейлиста</h3>
-            <p class="text-[11px] text-slate-400">Вставьте список треков или прямые ссылки</p>
-          </div>
-        </div>
-        <button id="btnClosePlaylistImportModal" class="text-slate-400 hover:text-white p-1">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-
-      <!-- Вкладки способов импорта -->
-      <div class="flex items-center space-x-2 border-b border-dark-border/60 pb-2 text-xs">
-        <button id="tabBtnText" type="button" class="tab-btn px-3 py-1.5 rounded-xl bg-brand-600 text-white font-semibold transition">
-          <i class="fa-solid fa-paste mr-1.5"></i> Скопированный список
-        </button>
-        <button id="tabBtnFiles" type="button" class="tab-btn px-3 py-1.5 rounded-xl bg-dark-bg text-slate-400 hover:text-white transition">
-          <i class="fa-solid fa-folder-open mr-1.5 text-brand-accent"></i> Папка с MP3
-        </button>
-        <button id="tabBtnDirect" type="button" class="tab-btn px-3 py-1.5 rounded-xl bg-dark-bg text-slate-400 hover:text-white transition">
-          <i class="fa-solid fa-link mr-1.5 text-emerald-400"></i> Прямой MP3 URL
-        </button>
-      </div>
-
-      <!-- Вкладка 1: Текстовый список -->
-      <div id="tabContentText" class="space-y-3 flex-1 flex flex-col">
-        <p class="text-xs text-slate-400 leading-relaxed">
-          Скопируйте названия песен из вашего плейлиста и вставьте сюда. Поиск подберет доступные аудиопотоки:
-        </p>
-        <textarea id="inputTextPlaylist" rows="6" placeholder="Michael Jackson - Billie Jean&#10;Queen - Bohemian Rhapsody&#10;The Beatles - Yesterday&#10;Daft Punk - One More Time" class="w-full flex-1 bg-dark-bg border border-dark-border rounded-2xl p-3.5 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition font-mono leading-5"></textarea>
-        
-        <!-- Индикатор прогресса импорта -->
-        <div id="importProgressContainer" class="hidden space-y-2 p-3 bg-brand-500/10 border border-brand-500/20 rounded-2xl text-xs">
-          <div class="flex items-center justify-between text-brand-accent font-semibold">
-            <span id="importProgressText">Ищем треки...</span>
-            <span id="importProgressPercent">0%</span>
-          </div>
-          <div class="w-full bg-dark-bg h-2 rounded-full overflow-hidden">
-            <div id="importProgressBar" class="bg-gradient-to-r from-brand-600 to-brand-accent h-full w-0 transition-all duration-200"></div>
-          </div>
-        </div>
-
-        <!-- Отчет о ненайденных треках -->
-        <div id="importReportBox" class="hidden p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs text-amber-200 space-y-1 max-h-28 overflow-y-auto"></div>
-
-        <div class="flex items-center justify-between pt-1">
-          <span class="text-[11px] text-slate-500">По одному треку на строку (Артист — Название)</span>
-          <button id="btnProcessTextPlaylist" type="button" class="px-5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs transition shadow-lg shadow-brand-600/30 flex items-center space-x-2">
-            <i id="btnImportSpinner" class="fa-solid fa-circle-notch animate-spin hidden text-xs"></i>
-            <span id="btnImportText">Найти и добавить</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Вкладка 2: Папка с файлами -->
-      <div id="tabContentFiles" class="space-y-3 hidden flex-1 flex flex-col">
-        <p class="text-xs text-slate-400 leading-relaxed">
-          Выберите аудиофайлы со своего устройства (можно выделить сразу несколько треков):
-        </p>
-        <div class="p-6 bg-brand-500/10 border-2 border-dashed border-brand-500/30 rounded-2xl text-center flex flex-col items-center justify-center">
-          <i class="fa-solid fa-cloud-arrow-up text-4xl text-brand-accent mb-3 animate-bounce"></i>
-          <p class="text-xs text-slate-200 mb-2 font-semibold">Выберите один или несколько MP3 файлов с диска</p>
-          <input type="file" id="inputBatchLocalFiles" accept="audio/*" multiple class="text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-600 file:text-white hover:file:bg-brand-500 cursor-pointer">
-        </div>
-      </div>
-
-      <!-- Вкладка 3: Прямая ссылка -->
-      <div id="tabContentDirect" class="space-y-3 hidden flex-1 flex flex-col">
-        <p class="text-xs text-slate-400 leading-relaxed">
-          Вставьте прямую ссылку на открытый аудиофайл или радио-поток:
-        </p>
-        <input type="url" id="inputDirectUrl" placeholder="https://domain.com/track.mp3" class="w-full bg-dark-bg border border-dark-border rounded-2xl p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
-        <input type="text" id="inputDirectTitle" placeholder="Название трека (необязательно)" class="w-full bg-dark-bg border border-dark-border rounded-2xl p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
-        <div class="flex justify-end pt-2">
-          <button id="btnProcessDirectUrl" type="button" class="px-5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs transition shadow-lg shadow-brand-600/30">
-            Добавить поток в эфир
-          </button>
-        </div>
-      </div>
-
-      <div class="pt-2 border-t border-dark-border flex justify-end">
-        <button type="button" id="btnClosePlaylistImportModal2" class="px-4 py-2 rounded-xl text-xs text-slate-300 hover:bg-dark-hover transition">Закрыть</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- МОДАЛКА: Поиск треков -->
+  <!-- МОДАЛКА: Конвертер ссылок Яндекс Музыки, Apple Music и поиск YouTube -->
   <div id="smartMusicModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-dark-card border border-dark-border rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-dark-border pb-3">
         <div class="flex items-center space-x-2.5">
-          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-accent flex items-center justify-center text-white text-sm">
-            <i class="fa-solid fa-magnifying-glass"></i>
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-accent flex items-center justify-center text-white text-sm shadow-md">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
           </div>
           <div>
-            <h3 class="font-bold text-white text-base">Поиск трека</h3>
-            <p class="text-[11px] text-slate-400">Поиск записей по открытым каталогам</p>
+            <h3 class="font-bold text-white text-base">Добавить трек (Яндекс / Apple / YouTube)</h3>
+            <p class="text-[11px] text-slate-400">Вставьте ссылку любого стриминга или введите название</p>
           </div>
         </div>
         <button id="btnCloseSmartMusicModal" class="text-slate-400 hover:text-white p-1">
@@ -497,7 +385,7 @@
 
       <form id="smartMusicSearchForm" class="space-y-3">
         <div class="relative">
-          <input type="text" id="inputSmartQuery" placeholder="Michael Jackson, Queen, Nirvana, The Beatles, Daft Punk..." required class="w-full bg-dark-bg border border-dark-border rounded-2xl pl-10 pr-24 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
+          <input type="text" id="inputSmartQuery" placeholder="Ссылка на трек (Apple/Яндекс/YouTube) или артист и песня..." required class="w-full bg-dark-bg border border-dark-border rounded-2xl pl-10 pr-24 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
           <div class="absolute left-3.5 top-3.5 text-slate-500 text-sm">
             <i class="fa-solid fa-magnifying-glass"></i>
           </div>
@@ -509,17 +397,16 @@
 
         <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
           <span class="text-slate-500 mr-1">Быстрый выбор:</span>
-          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Michael Jackson Billie Jean">Michael Jackson</button>
-          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Queen Bohemian Rhapsody">Queen</button>
-          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Nirvana Smells Like Teen Spirit">Nirvana</button>
-          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="The Beatles Yesterday">Beatles</button>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Miyagi & Эндшпиль - I Got Love">Miyagi I Got Love</button>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="The Weeknd Blinding Lights">The Weeknd</button>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Daft Punk Get Lucky">Daft Punk</button>
         </div>
       </form>
 
-      <div id="smartResultsContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[200px] max-h-[300px]">
+      <div id="smartResultsContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[220px] max-h-[320px]">
         <div class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400 text-xs">
           <i class="fa-solid fa-music text-3xl mb-2 text-slate-600"></i>
-          <p>Введите имя исполнителя или название песни выше,<br>чтобы найти подходящий аудиопоток.</p>
+          <p>Вставьте ссылку из Apple Music, Яндекс Музыки или YouTube.<br>Мы конвертируем ее в полный аудиопоток!</p>
         </div>
       </div>
 
@@ -529,7 +416,7 @@
     </div>
   </div>
 
-  <!-- Всплывающие уведомления (Toast) -->
+  <!-- Toast уведомления -->
   <div id="toastNotification" class="fixed bottom-6 right-6 z-50 bg-dark-card border border-brand-500/40 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none">
     <div id="toastIcon" class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-accent flex items-center justify-center text-sm">
       <i class="fa-solid fa-check"></i>
@@ -537,48 +424,41 @@
     <span id="toastMessage" class="text-xs font-semibold">Уведомление</span>
   </div>
 
-  <!-- Главный аудиоэлемент -->
-  <audio id="mainAudioElement" preload="auto"></audio>
-
   <script>
-    // Векторные автономные обложки (data:image/svg)
     function createCoverSvg(title, colorA, colorB) {
-      const cleanTitle = (title || 'Sound').replace(/[<>&"]/g, '');
+      const cleanTitle = (title || 'Track').replace(/[<>&"]/g, '');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${colorA}"/><stop offset="100%" stop-color="${colorB}"/></linearGradient></defs><rect width="400" height="400" fill="url(%23g)"/><circle cx="200" cy="200" r="70" fill="%230b0e17" stroke="%23ffffff" stroke-opacity="0.25" stroke-width="6"/><circle cx="200" cy="200" r="18" fill="%23ffffff"/><text x="50%" y="82%" text-anchor="middle" fill="%23ffffff" font-family="sans-serif" font-weight="800" font-size="20" letter-spacing="1">${cleanTitle}</text></svg>`;
       return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
     }
 
-    // Стартовые проверенные треки без блокировок хотлинка
+    // Полные треки (реальные YouTube video ID)
     const INITIAL_TRACKS = [
       {
-        id: 'track-1',
-        title: 'SoundHelix Song 1 (Synth Chill)',
-        artist: 'SoundShare Lab',
-        genre: 'Synthwave Chill',
-        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        artwork: createCoverSvg('SoundHelix 1', '#7c3aed', '#ec4899'),
-        sourceName: 'Direct Master Audio',
-        duration: '6:12'
+        id: 'yt-track-1',
+        title: 'Billie Jean',
+        artist: 'Michael Jackson',
+        youtubeId: 'Zi_XLOBDo_Y',
+        artwork: 'https://i.ytimg.com/vi/Zi_XLOBDo_Y/hqdefault.jpg',
+        duration: '4:54',
+        durationSec: 294
       },
       {
-        id: 'track-2',
-        title: 'SoundHelix Song 2 (Electric Groove)',
-        artist: 'Retro Horizon',
-        genre: 'Electronic Groove',
-        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-        artwork: createCoverSvg('SoundHelix 2', '#06b6d4', '#10b981'),
-        sourceName: 'Direct Master Audio',
-        duration: '7:05'
+        id: 'yt-track-2',
+        title: 'Bohemian Rhapsody',
+        artist: 'Queen',
+        youtubeId: 'fJ9rUzIMcZQ',
+        artwork: 'https://i.ytimg.com/vi/fJ9rUzIMcZQ/hqdefault.jpg',
+        duration: '5:59',
+        durationSec: 359
       },
       {
-        id: 'track-3',
-        title: 'SoundHelix Song 3 (Night Ambient)',
-        artist: 'Lofi Astronaut',
-        genre: 'Ambient Beat',
-        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-        artwork: createCoverSvg('SoundHelix 3', '#f59e0b', '#7c3aed'),
-        sourceName: 'Direct Master Audio',
-        duration: '5:45'
+        id: 'yt-track-3',
+        title: 'Blinding Lights',
+        artist: 'The Weeknd',
+        youtubeId: '4NRXx6U8ABQ',
+        artwork: 'https://i.ytimg.com/vi/4NRXx6U8ABQ/hqdefault.jpg',
+        duration: '3:20',
+        durationSec: 200
       }
     ];
 
@@ -601,7 +481,6 @@
         sessionStorage.setItem(`soundshare_is_dj_${roomId}`, 'true');
         isHost = true;
       }
-
       return { roomId, isHost };
     }
 
@@ -622,9 +501,14 @@
       tracks: [...INITIAL_TRACKS]
     };
 
-    let isAudioUnlocked = false;
+    // Флаг приглушения по умолчанию
+    let isUserMuted = true;
+    let userPreferredVolume = 0.75;
+    let ytPlayer = null;
+    let isYtReady = false;
+    let timeUpdateTimer = null;
 
-    // Резервируемые брокеры MQTT
+    // Сеть MQTT
     const NETWORK_BROKERS = [
       'wss://broker.emqx.io:8084/mqtt',
       'wss://broker.hivemq.com:8884/mqtt',
@@ -635,8 +519,7 @@
     let presenceMap = new Map();
     let broadcastInterval = null;
 
-    // Элементы UI
-    const audio = document.getElementById('mainAudioElement');
+    // UI элементы
     const btnPlayPause = document.getElementById('btnPlayPause');
     const playPauseIcon = document.getElementById('playPauseIcon');
     const btnPrevTrack = document.getElementById('btnPrevTrack');
@@ -654,9 +537,9 @@
     const vinylCoverImg = document.getElementById('vinylCoverImg');
     const btnOpenInApple = document.getElementById('btnOpenInApple');
     const btnOpenInYandex = document.getElementById('btnOpenInYandex');
+    const btnOpenInYT = document.getElementById('btnOpenInYT');
     const currentTrackTitle = document.getElementById('currentTrackTitle');
     const currentTrackArtist = document.getElementById('currentTrackArtist');
-    const genreTag = document.getElementById('genreTag');
     const playlistContainer = document.getElementById('playlistContainer');
     const tracksBadgeCount = document.getElementById('tracksBadgeCount');
     const currentRoomDisplay = document.getElementById('currentRoomDisplay');
@@ -669,7 +552,7 @@
     const guestNoticeBanner = document.getElementById('guestNoticeBanner');
     const lockTimelineNotice = document.getElementById('lockTimelineNotice');
     const syncIndicator = document.getElementById('syncIndicator');
-    const audioUnlockBanner = document.getElementById('audioUnlockBanner');
+    const unmuteTipBanner = document.getElementById('unmuteTipBanner');
     const btnShareRoom = document.getElementById('btnShareRoom');
     const btnNewRoom = document.getElementById('btnNewRoom');
     const netStatusBadge = document.getElementById('netStatusBadge');
@@ -679,29 +562,15 @@
     const chatMessagesContainer = document.getElementById('chatMessagesContainer');
     const chatForm = document.getElementById('chatForm');
     const chatInput = document.getElementById('chatInput');
-    const sourceBadge = document.getElementById('sourceBadge');
 
-    // Модалки
-    const playlistImportModal = document.getElementById('playlistImportModal');
-    const btnOpenPlaylistImportModal = document.getElementById('btnOpenPlaylistImportModal');
-    const btnClosePlaylistImportModal = document.getElementById('btnClosePlaylistImportModal');
-    const btnClosePlaylistImportModal2 = document.getElementById('btnClosePlaylistImportModal2');
-    const inputTextPlaylist = document.getElementById('inputTextPlaylist');
-    const btnProcessTextPlaylist = document.getElementById('btnProcessTextPlaylist');
-    const inputBatchLocalFiles = document.getElementById('inputBatchLocalFiles');
-    const inputDirectUrl = document.getElementById('inputDirectUrl');
-    const inputDirectTitle = document.getElementById('inputDirectTitle');
-    const btnProcessDirectUrl = document.getElementById('btnProcessDirectUrl');
-    const importProgressContainer = document.getElementById('importProgressContainer');
-    const importProgressText = document.getElementById('importProgressText');
-    const importProgressPercent = document.getElementById('importProgressPercent');
-    const importProgressBar = document.getElementById('importProgressBar');
-    const importReportBox = document.getElementById('importReportBox');
-    const btnImportSpinner = document.getElementById('btnImportSpinner');
-    const btnImportText = document.getElementById('btnImportText');
+    const btnViewVinyl = document.getElementById('btnViewVinyl');
+    const btnViewVideo = document.getElementById('btnViewVideo');
+    const vinylContainerWrapper = document.getElementById('vinylContainerWrapper');
+    const videoContainerWrapper = document.getElementById('videoContainerWrapper');
 
+    // Модалка
     const smartMusicModal = document.getElementById('smartMusicModal');
-    const btnOpenStreamImportModal = document.getElementById('btnOpenStreamImportModal');
+    const btnOpenSmartModal = document.getElementById('btnOpenSmartModal');
     const btnCloseSmartMusicModal = document.getElementById('btnCloseSmartMusicModal');
     const btnCloseSmartMusicModal2 = document.getElementById('btnCloseSmartMusicModal2');
     const smartMusicSearchForm = document.getElementById('smartMusicSearchForm');
@@ -709,85 +578,152 @@
     const smartResultsContainer = document.getElementById('smartResultsContainer');
     const searchBtnSpinner = document.getElementById('searchBtnSpinner');
 
-    // Безопасная загрузка трека
-    function loadCurrentTrackInEngine(autoPlay = false) {
+    // Инициализация YouTube IFrame API
+    window.onYouTubeIframeAPIReady = function() {
       const cur = roomState.tracks[roomState.currentTrackIndex] || roomState.tracks[0];
-      if (!cur || !cur.url) return;
+      ytPlayer = new YT.Player('ytPlayer', {
+        height: '100%',
+        width: '100%',
+        videoId: cur.youtubeId,
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          modestbranding: 1,
+          rel: 0,
+          origin: window.location.origin
+        },
+        events: {
+          onReady: onYtPlayerReady,
+          onStateChange: onYtPlayerStateChange
+        }
+      });
+    };
 
-      if (audio.src !== cur.url) {
-        audio.src = cur.url;
-        audio.load();
-      }
+    function onYtPlayerReady() {
+      isYtReady = true;
+      // Глушим звук по умолчанию, чтобы не оглушать и исключить блокировку браузером
+      ytPlayer.mute();
+      ytPlayer.setVolume(userPreferredVolume * 100);
+      updateVolumeVisuals();
 
-      if (autoPlay) {
-        safeAudioPlay();
+      startTimeUpdater();
+      updateUI();
+
+      if (roomState.isPlaying) {
+        ytPlayer.playVideo();
       }
     }
 
-    // Безопасный вызов play с обходом блокировок Autoplay
-    function safeAudioPlay() {
-      const cur = roomState.tracks[roomState.currentTrackIndex] || roomState.tracks[0];
-      if (!audio.src || audio.src === window.location.href) {
-        if (cur && cur.url) {
-          audio.src = cur.url;
-          audio.load();
-        } else {
-          return;
+    function onYtPlayerStateChange(event) {
+      if (event.data === YT.PlayerState.PLAYING) {
+        setVinylPlayingUI(true);
+        if (isHost && !roomState.isPlaying) {
+          roomState.isPlaying = true;
+          broadcastCurrentState();
+        }
+      } else if (event.data === YT.PlayerState.PAUSED) {
+        setVinylPlayingUI(false);
+        if (isHost && roomState.isPlaying) {
+          roomState.isPlaying = false;
+          broadcastCurrentState();
+        }
+      } else if (event.data === YT.PlayerState.ENDED) {
+        if (isHost) {
+          const nextIdx = (roomState.currentTrackIndex + 1) % roomState.tracks.length;
+          switchTrack(nextIdx);
         }
       }
+    }
 
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            isAudioUnlocked = true;
-            audioUnlockBanner.classList.add('hidden');
-            setVinylPlayingUI(true);
-          })
-          .catch((err) => {
-            setVinylPlayingUI(false);
-            if (err.name === 'NotAllowedError') {
-              if (!isAudioUnlocked) {
-                audioUnlockBanner.classList.remove('hidden');
-              }
-            } else {
-              console.warn("Ошибка воспроизведения audio.play():", err);
-              showToast("Не удалось запустить аудиопоток трека", "warning");
-            }
-          });
+    // Регулярный таймер синхронизации таймлайна
+    function startTimeUpdater() {
+      if (timeUpdateTimer) clearInterval(timeUpdateTimer);
+      timeUpdateTimer = setInterval(() => {
+        if (!isYtReady || !ytPlayer.getCurrentTime) return;
+        
+        const curSec = ytPlayer.getCurrentTime() || 0;
+        const durSec = ytPlayer.getDuration() || 0;
+
+        currentTimeDisplay.textContent = formatTime(curSec);
+        if (durSec > 0) {
+          durationDisplay.textContent = formatTime(durSec);
+          seekSlider.value = (curSec / durSec) * 100;
+        }
+      }, 500);
+    }
+
+    // Включение звука при желании пользователя
+    function unmuteAudio() {
+      if (!isYtReady) return;
+      isUserMuted = false;
+      ytPlayer.unMute();
+      ytPlayer.setVolume(userPreferredVolume * 100);
+      updateVolumeVisuals();
+      unmuteTipBanner.classList.add('hidden');
+      showToast("Звук включен!", "success");
+    }
+
+    unmuteTipBanner.addEventListener('click', unmuteAudio);
+
+    volumeSlider.addEventListener('input', (e) => {
+      userPreferredVolume = parseFloat(e.target.value);
+      if (userPreferredVolume > 0) {
+        isUserMuted = false;
+        if (isYtReady) {
+          ytPlayer.unMute();
+          ytPlayer.setVolume(userPreferredVolume * 100);
+        }
+        unmuteTipBanner.classList.add('hidden');
+      } else {
+        isUserMuted = true;
+        if (isYtReady) ytPlayer.mute();
+      }
+      updateVolumeVisuals();
+    });
+
+    btnMute.addEventListener('click', () => {
+      isUserMuted = !isUserMuted;
+      if (isUserMuted) {
+        if (isYtReady) ytPlayer.mute();
+      } else {
+        if (userPreferredVolume === 0) userPreferredVolume = 0.75;
+        volumeSlider.value = userPreferredVolume;
+        if (isYtReady) {
+          ytPlayer.unMute();
+          ytPlayer.setVolume(userPreferredVolume * 100);
+        }
+        unmuteTipBanner.classList.add('hidden');
+      }
+      updateVolumeVisuals();
+    });
+
+    function updateVolumeVisuals() {
+      if (isUserMuted) {
+        volumeIcon.className = "fa-solid fa-volume-xmark text-amber-400";
+        btnMute.title = "Звук приглушен. Нажмите, чтобы включить!";
+      } else {
+        volumeIcon.className = "fa-solid fa-volume-high text-slate-300";
+        btnMute.title = "Звук активен";
       }
     }
 
-    // Разблокировка звука при первом любом клике на странице
-    function unlockAudioEngine() {
-      if (isAudioUnlocked) return;
-
-      audio.play().then(() => {
-        isAudioUnlocked = true;
-        audioUnlockBanner.classList.add('hidden');
-        setVinylPlayingUI(true);
-        showToast("Звук разблокирован, вы в эфире!", "success");
-      }).catch(err => {
-        if (err.name === 'NotAllowedError') return;
-        isAudioUnlocked = true;
-        audioUnlockBanner.classList.add('hidden');
-      });
-
-      document.removeEventListener('pointerdown', unlockAudioEngine);
-      document.removeEventListener('keydown', unlockAudioEngine);
-    }
-
-    document.addEventListener('pointerdown', unlockAudioEngine);
-    document.addEventListener('keydown', unlockAudioEngine);
-    audioUnlockBanner.addEventListener('click', unlockAudioEngine);
-
-    // Отлов ошибок аудиоэлемента
-    audio.addEventListener('error', () => {
-      console.error("Audio Load Error:", audio.error);
-      showToast("Ошибка загрузки файла трека. Поток недоступен.", "warning");
+    // Переключение Винил / Клип
+    btnViewVinyl.addEventListener('click', () => {
+      btnViewVinyl.className = "px-2.5 py-1 rounded-lg bg-brand-600 text-white font-semibold transition";
+      btnViewVideo.className = "px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition";
+      vinylContainerWrapper.classList.remove('hidden');
+      videoContainerWrapper.classList.add('hidden');
     });
 
-    // Сетевой слой
+    btnViewVideo.addEventListener('click', () => {
+      btnViewVideo.className = "px-2.5 py-1 rounded-lg bg-brand-600 text-white font-semibold transition";
+      btnViewVinyl.className = "px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition";
+      vinylContainerWrapper.classList.add('hidden');
+      videoContainerWrapper.classList.remove('hidden');
+    });
+
+    // Сетевой брокер MQTT
     function initNetwork() {
       currentRoomDisplay.textContent = currentRoomId;
       updateRoleUI();
@@ -812,7 +748,7 @@
         mqttClient.on('connect', () => {
           updateNetBadge(isHost ? 'host' : 'guest', isHost ? 'DJ Эфир активен' : 'Слушаете эфир (Синхронно)');
           
-          const roomTopic = `soundshare/v8/rooms/${currentRoomId}/#`;
+          const roomTopic = `soundshare/v10/rooms/${currentRoomId}/#`;
           mqttClient.subscribe(roomTopic, { qos: 0 }, (err) => {
             if (!err) {
               sendNetworkMessage('PRESENCE', { nickname: myNickname, isHost });
@@ -835,9 +771,7 @@
           }
         });
 
-        mqttClient.on('error', () => {
-          rotateToNextBroker();
-        });
+        mqttClient.on('error', () => rotateToNextBroker());
 
       } catch (err) {
         rotateToNextBroker();
@@ -846,7 +780,7 @@
       broadcastInterval = setInterval(() => {
         sendNetworkMessage('PRESENCE', { nickname: myNickname, isHost });
         cleanOfflineUsers();
-        if (isHost && !audio.paused) {
+        if (isHost && isYtReady && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
           broadcastCurrentState();
         }
       }, 4000);
@@ -854,13 +788,13 @@
 
     function rotateToNextBroker() {
       currentBrokerIndex = (currentBrokerIndex + 1) % NETWORK_BROKERS.length;
-      updateNetBadge('connecting', 'Переподключение...');
+      updateNetBadge('connecting', 'Смена сервера...');
       setTimeout(initNetwork, 1200);
     }
 
     function sendNetworkMessage(type, payload) {
       if (!mqttClient || !mqttClient.connected) return;
-      const topic = `soundshare/v8/rooms/${currentRoomId}/${type.toLowerCase()}`;
+      const topic = `soundshare/v10/rooms/${currentRoomId}/${type.toLowerCase()}`;
       const msg = JSON.stringify({
         type,
         senderId: myClientId,
@@ -874,10 +808,13 @@
 
     function broadcastCurrentState() {
       if (!isHost && !roomState.partyMode) return;
+      const curTime = (isYtReady && ytPlayer.getCurrentTime) ? ytPlayer.getCurrentTime() : 0;
+      const isPlay = (isYtReady && ytPlayer.getPlayerState) ? ytPlayer.getPlayerState() === YT.PlayerState.PLAYING : false;
+
       const snapshot = {
         ...roomState,
-        playbackTime: audio.currentTime || 0,
-        isPlaying: !audio.paused,
+        playbackTime: curTime,
+        isPlaying: isPlay,
         updatedAt: Date.now()
       };
       sendNetworkMessage('SYNC_STATE', snapshot);
@@ -907,7 +844,7 @@
           isHost = false;
           sessionStorage.removeItem(`soundshare_is_dj_${currentRoomId}`);
           updateRoleUI();
-          showToast(`${nickname} занял позицию DJ`, 'info');
+          showToast(`${nickname} теперь DJ`, 'info');
         }
       }
     }
@@ -918,12 +855,7 @@
 
       roomState = { ...incoming };
 
-      if (trackChanged || playlistChanged) {
-        renderPlaylist();
-        loadCurrentTrackInEngine(incoming.isPlaying);
-      }
-
-      updateUI();
+      if (playlistChanged) renderPlaylist();
 
       let targetTime = incoming.playbackTime || 0;
       if (incoming.isPlaying && incoming.updatedAt) {
@@ -931,16 +863,35 @@
         targetTime += Math.max(0, elapsedSec);
       }
 
-      if (Math.abs(audio.currentTime - targetTime) > 1.2 && isFinite(targetTime)) {
-        audio.currentTime = Math.min(targetTime, audio.duration || targetTime);
+      if (trackChanged) {
+        renderPlaylist();
+        updateUI();
+        if (isYtReady) {
+          const track = roomState.tracks[roomState.currentTrackIndex];
+          if (track) {
+            ytPlayer.loadVideoById(track.youtubeId, targetTime);
+            if (!incoming.isPlaying) ytPlayer.pauseVideo();
+          }
+        }
+        return;
       }
 
-      if (incoming.isPlaying) {
-        safeAudioPlay();
-        setVinylPlayingUI(true);
-      } else {
-        audio.pause();
-        setVinylPlayingUI(false);
+      updateUI();
+
+      if (isYtReady && ytPlayer.getCurrentTime) {
+        const myTime = ytPlayer.getCurrentTime();
+        if (Math.abs(myTime - targetTime) > 1.8) {
+          ytPlayer.seekTo(targetTime, true);
+        }
+
+        const myState = ytPlayer.getPlayerState();
+        if (incoming.isPlaying && myState !== YT.PlayerState.PLAYING) {
+          ytPlayer.playVideo();
+          setVinylPlayingUI(true);
+        } else if (!incoming.isPlaying && myState === YT.PlayerState.PLAYING) {
+          ytPlayer.pauseVideo();
+          setVinylPlayingUI(false);
+        }
       }
     }
 
@@ -1041,21 +992,13 @@
       if (curTrack) {
         currentTrackTitle.textContent = curTrack.title;
         currentTrackArtist.textContent = curTrack.artist;
-        genreTag.textContent = curTrack.genre || 'Оригинальный трек';
+        if (curTrack.artwork && vinylCoverImg) vinylCoverImg.src = curTrack.artwork;
+        if (curTrack.duration) durationDisplay.textContent = curTrack.duration;
 
-        if (curTrack.artwork && vinylCoverImg) {
-          vinylCoverImg.src = curTrack.artwork;
-        }
-
-        if (sourceBadge) {
-          sourceBadge.innerHTML = `<i class="fa-solid fa-circle-nodes mr-1"></i> ${curTrack.sourceName || 'Audio Stream'}`;
-        }
-
-        btnOpenInYandex.href = curTrack.yandexUrl || `https://music.yandex.ru/search?text=${encodeURIComponent(curTrack.artist + ' ' + curTrack.title)}`;
-        btnOpenInApple.href = curTrack.appleUrl || `https://music.apple.com/ru/search?term=${encodeURIComponent(curTrack.artist + ' ' + curTrack.title)}`;
+        btnOpenInYandex.href = `https://music.yandex.ru/search?text=${encodeURIComponent(curTrack.artist + ' ' + curTrack.title)}`;
+        btnOpenInApple.href = `https://music.apple.com/ru/search?term=${encodeURIComponent(curTrack.artist + ' ' + curTrack.title)}`;
+        btnOpenInYT.href = `https://www.youtube.com/watch?v=${curTrack.youtubeId}`;
       }
-
-      setVinylPlayingUI(!audio.paused);
       updateRoleUI();
     }
 
@@ -1068,23 +1011,23 @@
       if (!track) return;
 
       roomState.currentTrackIndex = index;
-      loadCurrentTrackInEngine(true);
+      if (isYtReady) {
+        ytPlayer.loadVideoById(track.youtubeId, 0);
+      }
       renderPlaylist();
       updateUI();
       broadcastCurrentState();
     }
 
     btnPlayPause.addEventListener('click', () => {
-      if (!canControl()) {
-        showToast("Управлением звуком руководит DJ.", "warning");
-        return;
-      }
-      if (audio.paused) {
-        safeAudioPlay();
+      if (!canControl() || !isYtReady) return;
+      const state = ytPlayer.getPlayerState();
+      if (state === YT.PlayerState.PLAYING) {
+        ytPlayer.pauseVideo();
       } else {
-        audio.pause();
+        ytPlayer.playVideo();
       }
-      setTimeout(broadcastCurrentState, 300);
+      setTimeout(broadcastCurrentState, 350);
     });
 
     btnNextTrack.addEventListener('click', () => {
@@ -1100,54 +1043,33 @@
     });
 
     btnRewind10.addEventListener('click', () => {
-      if (!canControl()) return;
-      audio.currentTime = Math.max(0, audio.currentTime - 10);
+      if (!canControl() || !isYtReady) return;
+      const cur = ytPlayer.getCurrentTime() || 0;
+      ytPlayer.seekTo(Math.max(0, cur - 10), true);
       broadcastCurrentState();
     });
 
     btnForward10.addEventListener('click', () => {
-      if (!canControl()) return;
-      audio.currentTime = Math.min(audio.duration || 9999, audio.currentTime + 10);
+      if (!canControl() || !isYtReady) return;
+      const cur = ytPlayer.getCurrentTime() || 0;
+      const dur = ytPlayer.getDuration() || 9999;
+      ytPlayer.seekTo(Math.min(dur, cur + 10), true);
       broadcastCurrentState();
     });
 
     seekSlider.addEventListener('input', () => {
-      if (!canControl() || !audio.duration) return;
-      const targetTime = (seekSlider.value / 100) * audio.duration;
+      if (!canControl() || !isYtReady) return;
+      const dur = ytPlayer.getDuration() || 0;
+      const targetTime = (seekSlider.value / 100) * dur;
       currentTimeDisplay.textContent = formatTime(targetTime);
     });
 
     seekSlider.addEventListener('change', () => {
-      if (!canControl() || !audio.duration) return;
-      const targetTime = (seekSlider.value / 100) * audio.duration;
-      audio.currentTime = targetTime;
+      if (!canControl() || !isYtReady) return;
+      const dur = ytPlayer.getDuration() || 0;
+      const targetTime = (seekSlider.value / 100) * dur;
+      ytPlayer.seekTo(targetTime, true);
       broadcastCurrentState();
-    });
-
-    audio.addEventListener('timeupdate', () => {
-      if (!audio.duration) return;
-      const pct = (audio.currentTime / audio.duration) * 100;
-      seekSlider.value = pct;
-      currentTimeDisplay.textContent = formatTime(audio.currentTime);
-      durationDisplay.textContent = formatTime(audio.duration);
-    });
-
-    audio.addEventListener('ended', () => {
-      if (isHost) {
-        const nextIdx = (roomState.currentTrackIndex + 1) % roomState.tracks.length;
-        switchTrack(nextIdx);
-      }
-    });
-
-    volumeSlider.addEventListener('input', (e) => {
-      audio.volume = parseFloat(e.target.value);
-      audio.muted = false;
-      volumeIcon.className = audio.volume === 0 ? "fa-solid fa-volume-xmark" : "fa-solid fa-volume-high";
-    });
-
-    btnMute.addEventListener('click', () => {
-      audio.muted = !audio.muted;
-      volumeIcon.className = audio.muted ? "fa-solid fa-volume-xmark text-rose-400" : "fa-solid fa-volume-high";
     });
 
     btnTogglePartyMode.addEventListener('click', () => {
@@ -1189,11 +1111,12 @@
           <div class="flex items-center space-x-3 overflow-hidden">
             <div class="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-dark-border shadow-sm">
               <img src="${track.artwork}" alt="cover" class="w-full h-full object-cover">
-              ${isCurrent && !audio.paused ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><i class="fa-solid fa-chart-simple text-brand-accent text-xs animate-bounce"></i></div>' : ''}
+              ${isCurrent ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><i class="fa-brands fa-youtube text-red-400 text-xs animate-pulse"></i></div>' : ''}
             </div>
             <div class="truncate">
               <div class="flex items-center space-x-1.5 truncate">
                 <h4 class="text-xs font-bold truncate ${isCurrent ? 'text-brand-accent' : 'group-hover:text-white'}">${escapeHtml(track.title)}</h4>
+                <span class="text-[9px] text-red-400 bg-red-950/60 px-1 py-0.2 rounded border border-red-500/30">Full</span>
               </div>
               <p class="text-[11px] text-slate-400 truncate">${escapeHtml(track.artist)}</p>
             </div>
@@ -1204,10 +1127,7 @@
           </div>
         `;
 
-        item.addEventListener('click', () => {
-          switchTrack(index);
-        });
-
+        item.addEventListener('click', () => switchTrack(index));
         playlistContainer.appendChild(item);
       });
     }
@@ -1224,6 +1144,7 @@
       window.location.reload();
     });
 
+    // Реакции и чат
     document.querySelectorAll('.reaction-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const emoji = btn.dataset.emoji;
@@ -1247,7 +1168,6 @@
       e.preventDefault();
       const val = chatInput.value.trim();
       if (!val) return;
-
       addChatMessage(myNickname, val, true);
       sendNetworkMessage('CHAT', { text: val });
       chatInput.value = '';
@@ -1256,11 +1176,8 @@
     function addChatMessage(sender, text, isMe) {
       const msgDiv = document.createElement('div');
       msgDiv.className = `p-2.5 rounded-2xl flex flex-col max-w-[85%] ${
-        isMe 
-          ? 'ml-auto bg-brand-600/30 border border-brand-500/40 text-right' 
-          : 'mr-auto bg-dark-bg/80 border border-dark-border/80'
+        isMe ? 'ml-auto bg-brand-600/30 border border-brand-500/40 text-right' : 'mr-auto bg-dark-bg/80 border border-dark-border/80'
       }`;
-
       msgDiv.innerHTML = `
         <span class="text-[10px] font-bold ${isMe ? 'text-brand-accent' : 'text-slate-400'}">${escapeHtml(sender)}</span>
         <span class="text-xs text-slate-100 break-words mt-0.5">${escapeHtml(text)}</span>
@@ -1269,183 +1186,10 @@
       chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
     }
 
-    btnOpenPlaylistImportModal.addEventListener('click', () => {
+    // МОДАЛКА: Конвертация ссылок и поиск
+    btnOpenSmartModal.addEventListener('click', () => {
       if (!canControl()) {
-        showToast("Только DJ может добавлять плейлисты.", "warning");
-        return;
-      }
-      importReportBox.classList.add('hidden');
-      importProgressContainer.classList.add('hidden');
-      playlistImportModal.classList.remove('hidden');
-    });
-
-    btnClosePlaylistImportModal.addEventListener('click', () => playlistImportModal.classList.add('hidden'));
-    btnClosePlaylistImportModal2.addEventListener('click', () => playlistImportModal.classList.add('hidden'));
-
-    const tabBtnText = document.getElementById('tabBtnText');
-    const tabBtnFiles = document.getElementById('tabBtnFiles');
-    const tabBtnDirect = document.getElementById('tabBtnDirect');
-    const tabContentText = document.getElementById('tabContentText');
-    const tabContentFiles = document.getElementById('tabContentFiles');
-    const tabContentDirect = document.getElementById('tabContentDirect');
-
-    tabBtnText.addEventListener('click', () => switchImportTab('text'));
-    tabBtnFiles.addEventListener('click', () => switchImportTab('files'));
-    tabBtnDirect.addEventListener('click', () => switchImportTab('direct'));
-
-    function switchImportTab(tab) {
-      [tabBtnText, tabBtnFiles, tabBtnDirect].forEach(b => b.className = "tab-btn px-3 py-1.5 rounded-xl bg-dark-bg text-slate-400 hover:text-white transition");
-      [tabContentText, tabContentFiles, tabContentDirect].forEach(c => c.classList.add('hidden'));
-
-      if (tab === 'text') {
-        tabBtnText.className = "tab-btn px-3 py-1.5 rounded-xl bg-brand-600 text-white font-semibold transition";
-        tabContentText.classList.remove('hidden');
-      } else if (tab === 'files') {
-        tabBtnFiles.className = "tab-btn px-3 py-1.5 rounded-xl bg-brand-600 text-white font-semibold transition";
-        tabContentFiles.classList.remove('hidden');
-      } else {
-        tabBtnDirect.className = "tab-btn px-3 py-1.5 rounded-xl bg-brand-600 text-white font-semibold transition";
-        tabContentDirect.classList.remove('hidden');
-      }
-    }
-
-    btnProcessTextPlaylist.addEventListener('click', async () => {
-      const raw = inputTextPlaylist.value.trim();
-      if (!raw) return;
-
-      const lines = raw.split('\n')
-        .map(l => l.replace(/^\d+[\.\)\-\s]+/, '').replace(/\s*\d+:\d+\s*$/, '').trim())
-        .filter(l => l.length > 2);
-
-      if (lines.length === 0) return;
-
-      btnProcessTextPlaylist.disabled = true;
-      btnImportSpinner.classList.remove('hidden');
-      btnImportText.textContent = "Поиск треков...";
-      importProgressContainer.classList.remove('hidden');
-      importReportBox.classList.add('hidden');
-
-      const foundTracks = [];
-      const notFoundLines = [];
-
-      for (let i = 0; i < lines.length; i++) {
-        const query = lines[i];
-        const progressPct = Math.round(((i + 1) / lines.length) * 100);
-        importProgressBar.style.width = `${progressPct}%`;
-        importProgressPercent.textContent = `${progressPct}%`;
-        importProgressText.textContent = `Поиск (${i + 1}/${lines.length}): "${query.slice(0, 24)}..."`;
-
-        try {
-          const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=1`);
-          const data = await res.json();
-          const item = (data.results || [])[0];
-
-          if (item && item.previewUrl) {
-            foundTracks.push({
-              id: 'itunes-' + item.trackId,
-              title: item.trackName,
-              artist: item.artistName,
-              genre: item.primaryGenreName || 'Music',
-              url: item.previewUrl,
-              artwork: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '400x400bb') : createCoverSvg(item.trackName, '#7c3aed', '#ec4899'),
-              duration: formatTime(item.trackTimeMillis ? item.trackTimeMillis / 1000 : 30),
-              sourceName: 'Apple Preview',
-              yandexUrl: `https://music.yandex.ru/search?text=${encodeURIComponent(item.artistName + ' ' + item.trackName)}`,
-              appleUrl: item.trackViewUrl || `https://music.apple.com/ru/search?term=${encodeURIComponent(item.artistName + ' ' + item.trackName)}`
-            });
-          } else {
-            notFoundLines.push(query);
-          }
-        } catch (e) {
-          notFoundLines.push(query);
-        }
-      }
-
-      btnProcessTextPlaylist.disabled = false;
-      btnImportSpinner.classList.add('hidden');
-      btnImportText.textContent = "Найти и добавить";
-
-      if (foundTracks.length > 0) {
-        roomState.tracks = [...roomState.tracks, ...foundTracks];
-        renderPlaylist();
-        broadcastCurrentState();
-        showToast(`Добавлено: ${foundTracks.length} из ${lines.length} треков!`, 'success');
-      }
-
-      importReportBox.classList.remove('hidden');
-      if (notFoundLines.length > 0) {
-        importReportBox.innerHTML = `
-          <div class="font-bold text-amber-300 mb-1">
-            <i class="fa-solid fa-circle-info mr-1"></i> Результат: Добавлено ${foundTracks.length} из ${lines.length}
-          </div>
-          <div class="text-[11px] text-slate-300 mb-1">Не удалось найти (${notFoundLines.length}):</div>
-          <ul class="list-disc list-inside space-y-0.5 text-[10px] text-slate-400">
-            ${notFoundLines.slice(0, 5).map(n => `<li>${escapeHtml(n)}</li>`).join('')}
-            ${notFoundLines.length > 5 ? `<li>...и еще ${notFoundLines.length - 5}</li>` : ''}
-          </ul>
-        `;
-      } else {
-        importReportBox.innerHTML = `
-          <div class="font-bold text-emerald-400">
-            <i class="fa-solid fa-check mr-1"></i> Все ${foundTracks.length} треков добавлены в эфир!
-          </div>
-        `;
-      }
-    });
-
-    inputBatchLocalFiles.addEventListener('change', (e) => {
-      const files = Array.from(e.target.files);
-      if (!files || files.length === 0) return;
-
-      const newFiles = files.map((file, idx) => {
-        const cleanName = file.name.replace(/\.[^/.]+$/, "");
-        return {
-          id: 'local-' + Date.now() + '-' + idx,
-          title: cleanName,
-          artist: myNickname,
-          genre: 'Локальный MP3',
-          url: URL.createObjectURL(file),
-          artwork: createCoverSvg(cleanName, '#ec4899', '#f59e0b'),
-          sourceName: 'Локальный файл',
-          duration: 'MP3'
-        };
-      });
-
-      roomState.tracks = [...roomState.tracks, ...newFiles];
-      renderPlaylist();
-      broadcastCurrentState();
-      playlistImportModal.classList.add('hidden');
-      showToast(`Загружено ${newFiles.length} треков!`, 'success');
-    });
-
-    btnProcessDirectUrl.addEventListener('click', () => {
-      const url = inputDirectUrl.value.trim();
-      if (!url) return;
-
-      const title = inputDirectTitle.value.trim() || 'Прямой аудиопоток';
-      const newTrack = {
-        id: 'direct-' + Date.now(),
-        title: title,
-        artist: 'Прямой URL',
-        genre: 'Live Stream',
-        url: url,
-        artwork: createCoverSvg(title, '#10b981', '#06b6d4'),
-        sourceName: 'Прямой URL',
-        duration: 'Stream'
-      };
-
-      roomState.tracks.push(newTrack);
-      renderPlaylist();
-      broadcastCurrentState();
-      playlistImportModal.classList.add('hidden');
-      inputDirectUrl.value = '';
-      inputDirectTitle.value = '';
-      showToast(`Поток "${title}" добавлен!`, 'success');
-    });
-
-    btnOpenStreamImportModal.addEventListener('click', () => {
-      if (!canControl()) {
-        showToast("Только DJ может искать треки.", "warning");
+        showToast("Только DJ может добавлять треки.", "warning");
         return;
       }
       smartMusicModal.classList.remove('hidden');
@@ -1462,41 +1206,136 @@
       });
     });
 
+    // Извлечение YouTube ID напрямую из ссылки любого формата
+    function extractYouTubeId(url) {
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=)|music\.youtube\.com\/watch\?v=)([\w-]{11})/);
+      return match ? match[1] : null;
+    }
+
+    // Резолвер треков из Apple Music / Яндекс Музыки / Текста в YouTube видео
     smartMusicSearchForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const query = inputSmartQuery.value.trim();
-      if (!query) return;
+      const rawInput = inputSmartQuery.value.trim();
+      if (!rawInput) return;
 
       searchBtnSpinner.classList.remove('hidden');
       smartResultsContainer.innerHTML = `
         <div class="flex flex-col items-center justify-center p-8 space-y-3">
           <i class="fa-solid fa-compact-disc text-3xl text-brand-accent animate-spin-slow"></i>
-          <span class="text-xs text-slate-400 font-medium">Поиск записей...</span>
+          <span class="text-xs text-slate-400 font-medium">Распознавание ссылки и поиск на YouTube...</span>
         </div>
       `;
 
       try {
-        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=8`);
-        const data = await res.json();
-        const results = (data.results || []).filter(r => Boolean(r.previewUrl));
+        let finalQuery = rawInput;
+        let directYtId = extractYouTubeId(rawInput);
 
-        if (results.length > 0) {
-          renderSearchResults(results);
-        } else {
-          smartResultsContainer.innerHTML = `
-            <div class="text-center p-6 text-slate-400 text-xs bg-dark-bg/80 border border-dark-border rounded-2xl">
-              <i class="fa-solid fa-face-frown text-2xl mb-2 text-slate-500"></i>
-              <p class="font-semibold text-white">Ничего не найдено</p>
-              <p class="text-[11px] mt-1 text-slate-400">Попробуйте ввести имя артиста или загрузите MP3 через импорт.</p>
-            </div>
-          `;
+        // 1. Проверяем ссылку на Apple Music
+        if (rawInput.includes('music.apple.com')) {
+          const trackMatch = rawInput.match(/i=(\d+)/) || rawInput.match(/\/song\/[^\/]+\/(\d+)/);
+          if (trackMatch && trackMatch[1]) {
+            try {
+              const itunesRes = await fetch(`https://itunes.apple.com/lookup?id=${trackMatch[1]}`);
+              const itunesData = await itunesRes.json();
+              if (itunesData.results && itunesData.results.length > 0) {
+                const item = itunesData.results[0];
+                finalQuery = `${item.artistName} - ${item.trackName}`;
+              }
+            } catch (err) {
+              console.warn("iTunes lookup err:", err);
+            }
+          }
+        } 
+        // 2. Проверяем ссылку на Яндекс Музыку
+        else if (rawInput.includes('music.yandex.ru')) {
+          const matchTitle = rawInput.match(/\/track\/(\d+)/);
+          finalQuery = rawInput.replace(/https?:\/\/music\.yandex\.ru[^\s]+/gi, '').trim() || 'Yandex Track ' + (matchTitle ? matchTitle[1] : '');
+          showToast("Поиск трека с Яндекс Музыки в каталоге YouTube...", "info");
         }
+
+        // Если вставили прямую ссылку на YouTube
+        if (directYtId) {
+          addTrackToPlaylist({
+            id: 'yt-' + directYtId,
+            title: 'YouTube Track',
+            artist: 'YouTube Music',
+            youtubeId: directYtId,
+            artwork: `https://i.ytimg.com/vi/${directYtId}/hqdefault.jpg`,
+            duration: 'Full'
+          });
+          return;
+        }
+
+        // 3. Выполняем автопоиск через открытые зеркала Piped / Invidious для получения реального videoId
+        const searchMirrors = [
+          `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(finalQuery)}&filter=music_songs`,
+          `https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(finalQuery)}&type=video`,
+          `https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(finalQuery)}&type=video`
+        ];
+
+        let foundList = [];
+
+        for (const mirror of searchMirrors) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
+            const res = await fetch(mirror, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!res.ok) continue;
+
+            const data = await res.json();
+            
+            // Piped формат
+            if (data.items && data.items.length > 0) {
+              foundList = data.items.slice(0, 5).map(item => {
+                const vId = item.url ? item.url.replace('/watch?v=', '') : item.id;
+                return {
+                  title: item.title,
+                  artist: item.uploaderName || 'YouTube Artist',
+                  youtubeId: vId,
+                  artwork: item.thumbnail || `https://i.ytimg.com/vi/${vId}/hqdefault.jpg`,
+                  duration: formatTime(item.duration || 210)
+                };
+              });
+              break;
+            }
+
+            // Invidious формат
+            if (Array.isArray(data) && data.length > 0) {
+              foundList = data.slice(0, 5).map(item => ({
+                title: item.title,
+                artist: item.author || 'YouTube Artist',
+                youtubeId: item.videoId,
+                artwork: (item.videoThumbnails && item.videoThumbnails[0]?.url) || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
+                duration: formatTime(item.lengthSeconds || 210)
+              }));
+              break;
+            }
+          } catch (e) {}
+        }
+
+        if (foundList.length > 0) {
+          renderSearchResults(foundList);
+        } else {
+          // Запасной вариант: iTunes метаданные + поиск
+          const itunesFallback = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(finalQuery)}&entity=song&limit=4`);
+          const itunesJson = await itunesFallback.json();
+          
+          if (itunesJson.results && itunesJson.results.length > 0) {
+            renderiTunesFallback(itunesJson.results);
+          } else {
+            smartResultsContainer.innerHTML = `
+              <div class="text-center p-6 text-slate-400 text-xs bg-dark-bg/80 border border-dark-border rounded-2xl">
+                <i class="fa-brands fa-youtube text-2xl mb-2 text-red-500"></i>
+                <p class="font-semibold text-white">Трек не найден</p>
+                <p class="text-[11px] mt-1 text-slate-400">Попробуйте скопировать точное название трека или вставьте прямую ссылку с YouTube.</p>
+              </div>
+            `;
+          }
+        }
+
       } catch (err) {
-        smartResultsContainer.innerHTML = `
-          <div class="text-center p-6 text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-2xl">
-            <p>Ошибка сети при поиске</p>
-          </div>
-        `;
+        console.warn("Search overall error:", err);
       } finally {
         searchBtnSpinner.classList.add('hidden');
       }
@@ -1507,11 +1346,48 @@
       items.forEach(item => {
         const card = document.createElement('div');
         card.className = "flex items-center justify-between p-3 rounded-2xl bg-dark-bg/80 border border-dark-border hover:border-brand-500/50 transition group";
+        card.innerHTML = `
+          <div class="flex items-center space-x-3 overflow-hidden flex-1 mr-3">
+            <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-dark-border/80 shadow-md">
+              <img src="${item.artwork}" alt="Art" class="w-full h-full object-cover">
+            </div>
+            <div class="truncate">
+              <h4 class="text-xs font-bold text-white truncate group-hover:text-brand-accent transition">${escapeHtml(item.title)}</h4>
+              <p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.artist)}</p>
+              <span class="text-[10px] text-red-400 font-mono"><i class="fa-brands fa-youtube mr-1"></i>Полный трек (${item.duration})</span>
+            </div>
+          </div>
+          <button class="btn-add-track px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs flex items-center space-x-1 shadow-md active:scale-95 transition shrink-0">
+            <i class="fa-solid fa-plus text-[10px]"></i>
+            <span>В эфир</span>
+          </button>
+        `;
+
+        card.querySelector('.btn-add-track').addEventListener('click', () => {
+          addTrackToPlaylist({
+            id: 'yt-' + item.youtubeId,
+            title: item.title,
+            artist: item.artist,
+            youtubeId: item.youtubeId,
+            artwork: item.artwork,
+            duration: item.duration
+          });
+        });
+
+        smartResultsContainer.appendChild(card);
+      });
+    }
+
+    function renderiTunesFallback(results) {
+      smartResultsContainer.innerHTML = '';
+      results.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "flex items-center justify-between p-3 rounded-2xl bg-dark-bg/80 border border-dark-border hover:border-brand-500/50 transition group";
         const hdArtwork = item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '400x400bb') : createCoverSvg(item.trackName, '#7c3aed', '#ec4899');
 
         card.innerHTML = `
           <div class="flex items-center space-x-3 overflow-hidden flex-1 mr-3">
-            <div class="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-dark-border/80 shadow-md">
+            <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-dark-border/80 shadow-md">
               <img src="${hdArtwork}" alt="Art" class="w-full h-full object-cover">
             </div>
             <div class="truncate">
@@ -1519,39 +1395,31 @@
               <p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.artistName)}</p>
             </div>
           </div>
-          <button class="btn-add-result-track px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-brand-600/30 active:scale-95 transition shrink-0">
-            <i class="fa-solid fa-plus text-[10px]"></i>
-            <span>В эфир</span>
+          <button class="btn-add-fallback px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent text-white font-bold text-xs flex items-center space-x-1 shrink-0">
+            <span>Найти на YouTube</span>
           </button>
         `;
 
-        card.querySelector('.btn-add-result-track').addEventListener('click', () => {
-          const newTrack = {
-            id: 'itunes-' + item.trackId,
-            title: item.trackName,
-            artist: item.artistName,
-            genre: item.primaryGenreName || 'Music',
-            url: item.previewUrl,
-            artwork: hdArtwork,
-            duration: formatTime(item.trackTimeMillis ? item.trackTimeMillis / 1000 : 30),
-            sourceName: 'Preview Master',
-            yandexUrl: `https://music.yandex.ru/search?text=${encodeURIComponent(item.artistName + ' ' + item.trackName)}`,
-            appleUrl: item.trackViewUrl || `https://music.apple.com/ru/search?term=${encodeURIComponent(item.artistName + ' ' + item.trackName)}`
-          };
-
-          roomState.tracks.push(newTrack);
-          const newIdx = roomState.tracks.length - 1;
-          renderPlaylist();
-          smartMusicModal.classList.add('hidden');
-          inputSmartQuery.value = '';
-          showToast(`Трек "${newTrack.title}" добавлен в эфир! 🎧`, 'success');
-          switchTrack(newIdx);
+        card.querySelector('.btn-add-fallback').addEventListener('click', () => {
+          inputSmartQuery.value = `${item.artistName} ${item.trackName}`;
+          smartMusicSearchForm.dispatchEvent(new Event('submit'));
         });
 
         smartResultsContainer.appendChild(card);
       });
     }
 
+    function addTrackToPlaylist(track) {
+      roomState.tracks.push(track);
+      const newIdx = roomState.tracks.length - 1;
+      renderPlaylist();
+      smartMusicModal.classList.add('hidden');
+      inputSmartQuery.value = '';
+      showToast(`Трек "${track.title}" добавлен в плейлист! 🎧`, 'success');
+      switchTrack(newIdx);
+    }
+
+    // Визуализатор звука
     function drawVisualizerBars() {
       requestAnimationFrame(drawVisualizerBars);
       const width = visualizerCanvas.width = visualizerCanvas.parentElement.clientWidth;
@@ -1560,7 +1428,7 @@
       canvasCtx.clearRect(0, 0, width, height);
       const bars = 26;
       const barWidth = width / bars;
-      const isPlaying = !audio.paused;
+      const isPlaying = isYtReady && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
 
       for (let i = 0; i < bars; i++) {
         let barHeight = 4;
@@ -1609,9 +1477,7 @@
       }
 
       toast.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
-      setTimeout(() => {
-        toast.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
-      }, 3500);
+      setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none'), 3500);
     }
 
     function copyTextToClipboard(text) {
@@ -1622,17 +1488,12 @@
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
-      try {
-        document.execCommand('copy');
-      } catch (err) {
-        console.warn('Copy error:', err);
-      }
+      try { document.execCommand('copy'); } catch(e){}
       document.body.removeChild(textArea);
     }
 
     window.addEventListener('load', () => {
       vinylCoverImg.src = roomState.tracks[0].artwork;
-      loadCurrentTrackInEngine(false);
       renderPlaylist();
       drawVisualizerBars();
       initNetwork();
