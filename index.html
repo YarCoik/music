@@ -6,19 +6,16 @@
   <title>SoundShare — Совместное прослушивание музыки</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- PeerJS для надежной P2P WebRTC синхронизации без бэкенда -->
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- Отказоустойчивый сетевой транспорт реального времени (MQTT over WebSockets) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
           },
           colors: {
             brand: {
@@ -40,7 +37,7 @@
           animation: {
             'spin-slow': 'spin 18s linear infinite',
             'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
-            'float-up': 'floatUp 2.5s ease-out forwards',
+            'float-up': 'floatUp 2.4s ease-out forwards',
           },
           keyframes: {
             pulseGlow: {
@@ -48,8 +45,8 @@
               '50%': { boxShadow: '0 0 35px rgba(6, 182, 212, 0.7)' },
             },
             floatUp: {
-              '0%': { transform: 'translateY(0) scale(0.7)', opacity: '1' },
-              '100%': { transform: 'translateY(-140px) scale(1.4)', opacity: '0' },
+              '0%': { transform: 'translateY(0) scale(0.8)', opacity: '1' },
+              '100%': { transform: 'translateY(-130px) scale(1.3)', opacity: '0' },
             }
           }
         }
@@ -58,7 +55,6 @@
   </script>
 
   <style>
-    /* Кастомный аккуратный скроллбар */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -74,7 +70,6 @@
       background: #7c3aed;
     }
 
-    /* Стилизация ползунка таймлайна */
     input[type=range] {
       -webkit-appearance: none;
       background: transparent;
@@ -129,7 +124,7 @@
       <div>
         <div class="flex items-center space-x-2">
           <span class="font-black text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-accent bg-clip-text text-transparent">SoundShare</span>
-          <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-brand-500/20 text-brand-accent border border-brand-accent/30 rounded-full">P2P Live</span>
+          <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-brand-500/20 text-brand-accent border border-brand-accent/30 rounded-full">Real-Time Sync</span>
         </div>
         <p class="text-xs text-slate-400 hidden sm:block">Слушай музыку синхронно с друзьями по индивидуальной ссылке</p>
       </div>
@@ -143,10 +138,10 @@
         <span id="currentRoomDisplay" class="font-mono font-bold text-white tracking-wider">генерация...</span>
       </div>
 
-      <!-- Бейдж P2P Сети -->
-      <div id="p2pStatusBadge" class="flex items-center bg-dark-bg/90 border border-dark-border rounded-xl px-3 py-1.5 text-xs text-amber-400">
+      <!-- Бейдж Сети синхронизации -->
+      <div id="netStatusBadge" class="flex items-center bg-dark-bg/90 border border-dark-border rounded-xl px-3 py-1.5 text-xs text-amber-400">
         <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse mr-2"></span>
-        <span id="p2pStatusText">Инициализация...</span>
+        <span id="netStatusText">Подключение...</span>
       </div>
 
       <!-- Счетчик слушателей онлайн -->
@@ -155,7 +150,7 @@
         <span id="listenerCountText">1 в сети</span>
       </div>
 
-      <!-- Главная кнопка скопировать уникальную ссылку -->
+      <!-- Главная кнопка скопировать ссылку -->
       <button id="btnShareRoom" type="button" class="flex items-center space-x-2 bg-gradient-to-r from-brand-600 via-brand-500 to-brand-accent hover:brightness-110 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition shadow-lg shadow-brand-600/30 active:scale-95 cursor-pointer">
         <i class="fa-solid fa-link"></i>
         <span>Скопировать ссылку для друга</span>
@@ -171,7 +166,7 @@
   <!-- Предупреждение о политике браузера Autoplay -->
   <div id="audioUnlockBanner" class="hidden bg-gradient-to-r from-amber-600 to-rose-600 text-white px-4 py-3 text-center text-xs sm:text-sm font-medium z-50 flex items-center justify-center space-x-3 shadow-lg cursor-pointer transition">
     <i class="fa-solid fa-volume-high text-lg animate-bounce"></i>
-    <span>Браузер ожидает вашего взаимодействия для включения звука. <strong>Нажмите сюда, чтобы слушать синхронно!</strong></span>
+    <span>Браузер заблокировал автовоспроизведение звука. <strong>Нажмите сюда, чтобы слушать синхронно!</strong></span>
     <button class="bg-white text-slate-900 text-xs font-bold px-3 py-1 rounded-lg ml-2 shadow">Включить звук</button>
   </div>
 
@@ -214,9 +209,9 @@
         <div id="guestNoticeBanner" class="hidden mb-4 p-3 rounded-2xl bg-brand-accent/10 border border-brand-accent/30 text-xs text-brand-accent flex items-center justify-between">
           <div class="flex items-center space-x-2">
             <i class="fa-solid fa-headphones-simple text-sm"></i>
-            <span>Вы слушаете эфир DJ. Воспроизведение синхронизировано с точностью до миллисекунды!</span>
+            <span>Вы слушаете эфир DJ. Воспроизведение синхронизировано в реальном времени!</span>
           </div>
-          <span class="text-[10px] bg-brand-accent/20 px-2 py-0.5 rounded-md font-mono">P2P Sync</span>
+          <span class="text-[10px] bg-brand-accent/20 px-2 py-0.5 rounded-md font-mono">Live Sync</span>
         </div>
 
         <!-- Виниловая вертушка и информация о треке -->
@@ -226,7 +221,7 @@
             <div id="vinylDisc" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full vinyl-grooves shadow-2xl border-4 border-slate-900 flex items-center justify-center animate-spin-slow paused-spin transition-transform duration-500 relative overflow-hidden">
               <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-brand-600 via-brand-neon to-brand-accent p-1 shadow-inner flex items-center justify-center overflow-hidden">
                 <div class="w-full h-full rounded-full bg-dark-bg flex items-center justify-center border-2 border-white/20 overflow-hidden relative">
-                  <img id="vinylCoverImg" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80" alt="Cover" class="w-full h-full object-cover">
+                  <img id="vinylCoverImg" src="" alt="Cover" class="w-full h-full object-cover">
                   <div class="w-5 h-5 rounded-full bg-slate-200 border-4 border-dark-bg absolute inset-0 m-auto z-10"></div>
                 </div>
               </div>
@@ -314,7 +309,7 @@
             </button>
           </div>
 
-          <!-- Громкость (доступна всем локально) -->
+          <!-- Громкость (доступна каждому локально) -->
           <div class="flex items-center space-x-3 mx-auto sm:mx-0">
             <button id="btnMute" class="text-slate-400 hover:text-white transition text-sm">
               <i id="volumeIcon" class="fa-solid fa-volume-high"></i>
@@ -346,9 +341,9 @@
           <i class="fa-solid fa-fingerprint"></i>
         </div>
         <div>
-          <span class="text-white font-semibold">Индивидуальная ссылка комнаты:</span>
-          Каждая сессия создает свой уникальный идентификатор. Чтобы пригласить друга, нажмите кнопку 
-          <strong class="text-brand-accent cursor-pointer hover:underline" onclick="document.getElementById('btnShareRoom').click()">«Скопировать ссылку для друга»</strong>. Друг откроет ссылку в любом браузере и сразу подключится к вашему стриму!
+          <span class="text-white font-semibold">Прямое подключение по ссылке:</span>
+          Комната синхронизируется через защищенный канал реального времени. Нажмите 
+          <strong class="text-brand-accent cursor-pointer hover:underline" onclick="document.getElementById('btnShareRoom').click()">«Скопировать ссылку для друга»</strong>. Друг откроет ее в любом браузере и сразу услышит то же самое в тот же момент!
         </div>
       </div>
     </section>
@@ -392,7 +387,7 @@
             <i class="fa-solid fa-comments text-brand-500"></i>
             <h3 class="font-bold text-white text-sm">Чат комнаты</h3>
           </div>
-          <span class="text-[11px] text-slate-400">P2P Live Chat</span>
+          <span class="text-[11px] text-slate-400">Live Chat</span>
         </div>
 
         <!-- Сообщения -->
@@ -422,7 +417,7 @@
           </div>
           <div>
             <h3 class="font-bold text-white text-base">Импорт Apple / Яндекс Музыка</h3>
-            <p class="text-[11px] text-slate-400">Вставьте ссылку на песню или введите название трека</p>
+            <p class="text-[11px] text-slate-400">Вставьте ссылку на трек или введите название композиции</p>
           </div>
         </div>
         <button id="btnCloseSmartMusicModal" class="text-slate-400 hover:text-white p-1">
@@ -479,7 +474,7 @@
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
-      <p class="text-xs text-slate-400">Выберите MP3 файл с вашего компьютера/телефона или введите прямую ссылку на аудиопоток.</p>
+      <p class="text-xs text-slate-400">Выберите MP3 файл с устройства или введите прямую ссылку на аудиопоток.</p>
 
       <form id="formAddTrack" class="space-y-3">
         <!-- Выбор файла с устройства -->
@@ -525,11 +520,17 @@
     <span id="toastMessage" class="text-xs font-semibold">Уведомление</span>
   </div>
 
-  <!-- HTML5 аудиоэлемент БЕЗ блокирующего crossorigin="anonymous" (предотвращает ошибку CORS) -->
+  <!-- HTML5 аудиоэлемент без лишних CORS ограничений -->
   <audio id="mainAudioElement" preload="auto"></audio>
 
   <script>
-    // Надежные проверенные треки без ограничений CORS и сбоев
+    // Векторные автономные обложки (гарантированно рендерятся без внешних серверов и ERR_CONNECTION_RESET)
+    function createCoverSvg(title, colorA, colorB) {
+      const cleanTitle = title.replace(/[<>&"]/g, '');
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${colorA}"/><stop offset="100%" stop-color="${colorB}"/></linearGradient></defs><rect width="400" height="400" fill="url(%23g)"/><circle cx="200" cy="200" r="70" fill="%230b0e17" stroke="%23ffffff" stroke-opacity="0.25" stroke-width="6"/><circle cx="200" cy="200" r="18" fill="%23ffffff"/><text x="50%" y="82%" text-anchor="middle" fill="%23ffffff" font-family="sans-serif" font-weight="800" font-size="20" letter-spacing="1">${cleanTitle}</text></svg>`;
+      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    }
+
     const DEFAULT_TRACKS = [
       {
         id: 'track-1',
@@ -537,7 +538,7 @@
         artist: 'SoundShare Lab',
         genre: 'Synthwave Chill',
         url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3',
-        artwork: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80',
+        artwork: createCoverSvg('Cyber Odyssey', '#7c3aed', '#06b6d4'),
         platform: 'soundshare',
         duration: '2:27'
       },
@@ -547,7 +548,7 @@
         artist: 'Retro Horizon',
         genre: 'Electronic Chill',
         url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=electronic-future-beats-117997.mp3',
-        artwork: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&auto=format&fit=crop&q=80',
+        artwork: createCoverSvg('Sunset Neon', '#ec4899', '#f59e0b'),
         platform: 'soundshare',
         duration: '2:44'
       },
@@ -557,51 +558,45 @@
         artist: 'Lofi Astronaut',
         genre: 'Lofi Beat',
         url: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=chill-abstract-intention-12099.mp3',
-        artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80',
+        artwork: createCoverSvg('Midnight Coffee', '#06b6d4', '#10b981'),
         platform: 'soundshare',
         duration: '2:01'
       }
     ];
 
-    // Генерация красивого случайного ID комнаты (например: vibe-7x92)
-    function generateRandomRoomId() {
-      const prefixes = ['vibe', 'wave', 'chill', 'night', 'beat', 'club', 'groove'];
-      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-      const randPart = Math.random().toString(36).substring(2, 6);
-      return `${prefix}-${randPart}`;
-    }
-
-    // Определение: пришел пользователь по готовой ссылке или открыл сайт с нуля
-    function determineRoomAndRole() {
+    // Определение уникальной комнаты и роли пользователя
+    function getSessionConfig() {
       const hash = window.location.hash.replace('#', '');
       const match = hash.match(/room=([a-zA-Z0-9_-]+)/);
+      
+      let roomId = '';
+      let isHost = false;
 
       if (match && match[1]) {
-        // Пользователь перешел по ссылке с конкретной комнатой -> он ГОСТЬ
-        return {
-          roomId: match[1].toLowerCase(),
-          isHost: false
-        };
+        // Пришли по ссылке с номером комнаты
+        roomId = match[1].toLowerCase();
+        // Проверяем: возможно, этот же браузер ранее создал эту комнату и просто нажал F5
+        const savedAsDJ = sessionStorage.getItem(`soundshare_is_dj_${roomId}`);
+        isHost = (savedAsDJ === 'true');
       } else {
-        // Пользователь зашел с нуля -> создаем уникальную комнату, он DJ (Хост)
-        const newRoomId = generateRandomRoomId();
-        window.location.hash = `room=${newRoomId}`;
-        return {
-          roomId: newRoomId,
-          isHost: true
-        };
+        // Создание новой индивидуальной комнаты с нуля
+        const prefixes = ['vibe', 'wave', 'chill', 'beat', 'groove', 'club'];
+        const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+        const rand = Math.random().toString(36).substring(2, 6);
+        roomId = `${prefix}-${rand}`;
+        window.location.hash = `room=${roomId}`;
+        sessionStorage.setItem(`soundshare_is_dj_${roomId}`, 'true');
+        isHost = true;
       }
+
+      return { roomId, isHost };
     }
 
-    const sessionInfo = determineRoomAndRole();
-    let currentRoomId = sessionInfo.roomId;
-    let isHost = sessionInfo.isHost;
+    const session = getSessionConfig();
+    let currentRoomId = session.roomId;
+    let isHost = session.isHost;
+    let myClientId = 'usr_' + Math.random().toString(36).substring(2, 9);
     let myNickname = (isHost ? 'DJ ' : 'Слушатель ') + Math.floor(100 + Math.random() * 900);
-
-    let peer = null;
-    let hostConnection = null;
-    let guestConnections = [];
-    let heartbeatInterval = null;
 
     // Глобальное синхронизируемое состояние
     let roomState = {
@@ -614,6 +609,17 @@
       partyMode: false,
       tracks: [...DEFAULT_TRACKS]
     };
+
+    // Сетевые брокеры с автопереключением в случае блокировки
+    const NETWORK_BROKERS = [
+      'wss://broker.emqx.io:8084/mqtt',
+      'wss://broker.hivemq.com:8884/mqtt',
+      'wss://test.mosquitto.org:8081'
+    ];
+    let currentBrokerIndex = 0;
+    let mqttClient = null;
+    let presenceMap = new Map();
+    let broadcastInterval = null;
 
     // DOM Элементы
     const audio = document.getElementById('mainAudioElement');
@@ -654,8 +660,8 @@
     const audioUnlockBanner = document.getElementById('audioUnlockBanner');
     const btnShareRoom = document.getElementById('btnShareRoom');
     const btnNewRoom = document.getElementById('btnNewRoom');
-    const p2pStatusBadge = document.getElementById('p2pStatusBadge');
-    const p2pStatusText = document.getElementById('p2pStatusText');
+    const netStatusBadge = document.getElementById('netStatusBadge');
+    const netStatusText = document.getElementById('netStatusText');
     const visualizerCanvas = document.getElementById('visualizerCanvas');
     const canvasCtx = visualizerCanvas.getContext('2d');
     const chatMessagesContainer = document.getElementById('chatMessagesContainer');
@@ -672,288 +678,209 @@
     const smartResultsContainer = document.getElementById('smartResultsContainer');
     const searchBtnSpinner = document.getElementById('searchBtnSpinner');
 
-    // Формирование уникальных peer-идентификаторов с префиксом приложения
-    function getHostPeerId(roomId) {
-      return `sndshare-v3-${roomId}-host`;
-    }
-
-    function getGuestPeerId(roomId) {
-      return `sndshare-v3-${roomId}-guest-${Math.random().toString(36).substring(2, 7)}`;
-    }
-
-    // Инициализация WebRTC P2P подключения
-    function initP2PNetworking() {
-      if (peer) {
-        try { peer.destroy(); } catch (e) {}
-      }
-      if (heartbeatInterval) clearInterval(heartbeatInterval);
-
+    // Инициализация сетевого слоя
+    function initNetwork() {
       currentRoomDisplay.textContent = currentRoomId;
-      guestConnections = [];
-      hostConnection = null;
+      updateRoleUI();
 
-      if (isHost) {
-        setupAsHost();
-      } else {
-        setupAsGuest();
-      }
-    }
+      if (broadcastInterval) clearInterval(broadcastInterval);
 
-    // Настройка узла DJ (Хоста)
-    function setupAsHost() {
-      const hostId = getHostPeerId(currentRoomId);
-      updateP2PBadge('connecting', 'Создание DJ-эфира...');
+      const brokerUrl = NETWORK_BROKERS[currentBrokerIndex];
+      updateNetBadge('connecting', 'Подключение к сети...');
 
-      peer = new Peer(hostId, {
-        debug: 1,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-          ]
+      try {
+        if (mqttClient) {
+          try { mqttClient.end(true); } catch(e){}
         }
-      });
 
-      peer.on('open', () => {
-        isHost = true;
-        roomState.hostName = myNickname;
-        updateP2PBadge('host', 'Эфир запущен (DJ)');
-        updateRoleUI();
-        updateListenerCount();
-        addChatMessage('Система', `Комната создана! Скопируйте ссылку и отправьте друзьям для совместного прослушивания.`, true);
-        startHeartbeat();
-
-        peer.on('connection', (conn) => {
-          handleIncomingGuest(conn);
+        mqttClient = mqtt.connect(brokerUrl, {
+          clientId: `snd_${myClientId}`,
+          clean: true,
+          connectTimeout: 6000,
+          reconnectPeriod: 5000
         });
-      });
 
-      peer.on('error', (err) => {
-        console.warn('Host peer error:', err.type, err);
-        if (err.type === 'unavailable-id') {
-          // Если ID занят (например при F5), пробуем подключиться как гость или пересоздать
-          showToast("Комната уже занята другим DJ. Подключаемся как гость...", "info");
-          setupAsGuest();
-        } else {
-          updateP2PBadge('error', 'Ошибка P2P сервера');
-        }
-      });
-    }
-
-    // Настройка узла Гостя (Слушателя)
-    function setupAsGuest() {
-      const guestId = getGuestPeerId(currentRoomId);
-      const hostId = getHostPeerId(currentRoomId);
-      updateP2PBadge('connecting', 'Поиск DJ комнаты...');
-
-      peer = new Peer(guestId, {
-        debug: 1,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-          ]
-        }
-      });
-
-      peer.on('open', () => {
-        isHost = false;
-        updateRoleUI();
-        startHeartbeat();
-
-        const conn = peer.connect(hostId, { reliable: true });
-
-        conn.on('open', () => {
-          hostConnection = conn;
-          updateP2PBadge('guest', 'Слушаете DJ (Синхронно)');
-          updateRoleUI();
-          addChatMessage('Система', `Вы успешно подключились к DJ комнаты! Музыка синхронизирована.`, false);
-
-          conn.send({
-            type: 'HELLO',
-            nickname: myNickname
+        mqttClient.on('connect', () => {
+          updateNetBadge(isHost ? 'host' : 'guest', isHost ? 'DJ Эфир активен' : 'Слушаете эфир (Синхронно)');
+          
+          const roomTopic = `soundshare/v4/rooms/${currentRoomId}/#`;
+          mqttClient.subscribe(roomTopic, { qos: 0 }, (err) => {
+            if (!err) {
+              sendNetworkMessage('PRESENCE', { nickname: myNickname, isHost });
+              if (isHost) {
+                broadcastCurrentState();
+              } else {
+                sendNetworkMessage('REQUEST_SYNC', {});
+              }
+            }
           });
         });
 
-        conn.on('data', (data) => {
-          handleIncomingMessage(data);
-        });
-
-        conn.on('close', () => {
-          updateP2PBadge('disconnected', 'DJ не в сети');
-          showToast('DJ покинул эфир. Вы можете занять место DJ и включить музыку!', 'warning');
-          btnClaimDJ.classList.remove('hidden');
-        });
-
-        conn.on('error', (err) => {
-          console.warn('Host connection err:', err);
-          updateP2PBadge('error', 'DJ не найден');
-          btnClaimDJ.classList.remove('hidden');
-        });
-      });
-
-      peer.on('error', (err) => {
-        console.warn('Guest peer error:', err);
-        updateP2PBadge('error', 'Сбой подключения');
-        btnClaimDJ.classList.remove('hidden');
-      });
-    }
-
-    // Heartbeat для предотвращения разрыва соединения с сервером сигналов
-    function startHeartbeat() {
-      if (heartbeatInterval) clearInterval(heartbeatInterval);
-      heartbeatInterval = setInterval(() => {
-        if (peer && !peer.destroyed && peer.socket && peer.socket._open) {
+        mqttClient.on('message', (topic, payload) => {
           try {
-            peer.socket.send({ type: 'HEARTBEAT' });
-          } catch(e) {}
-        }
-      }, 15000);
-    }
-
-    // Обработка подключения гостя к DJ
-    function handleIncomingGuest(conn) {
-      guestConnections.push(conn);
-      updateListenerCount();
-
-      conn.on('open', () => {
-        // Мгновенно отправляем гостю текущее состояние воспроизведения
-        conn.send({
-          type: 'SYNC_STATE',
-          state: {
-            ...roomState,
-            playbackTime: audio.currentTime,
-            isPlaying: !audio.paused,
-            updatedAt: Date.now()
+            const data = JSON.parse(payload.toString());
+            if (data.senderId === myClientId) return; // Игнорируем собственные эхо-сообщения
+            handleNetworkMessage(data);
+          } catch(e) {
+            console.warn('Network parse error:', e);
           }
         });
-      });
 
-      conn.on('data', (data) => {
-        if (data.type === 'HELLO') {
-          showToast(`${data.nickname || 'Новый слушатель'} подключился к эфиру! 🎧`, 'info');
-          addChatMessage('Система', `${data.nickname || 'Гость'} вошел в комнату`, false);
-        } else if (data.type === 'REQUEST_CONTROL') {
-          if (roomState.partyMode) {
-            applyPlaybackAction(data.actionData);
-          }
-        } else if (data.type === 'CHAT') {
-          addChatMessage(data.sender, data.text, false);
-          broadcastToGuests(data, conn);
-        } else if (data.type === 'REACTION') {
-          showFloatingEmoji(data.emoji);
-          broadcastToGuests(data, conn);
-        } else if (data.type === 'CLAIM_DJ') {
-          roomState.hostName = data.nickname;
-          showToast(`${data.nickname} стал новым DJ комнаты!`, 'info');
-          broadcastToGuests(data);
+        mqttClient.on('error', (err) => {
+          console.warn('Network broker error, переключаем на резервный:', err);
+          rotateToNextBroker();
+        });
+
+      } catch (err) {
+        console.warn('Init error:', err);
+        rotateToNextBroker();
+      }
+
+      // Фоновый пинг присутствия каждые 4 секунды
+      broadcastInterval = setInterval(() => {
+        sendNetworkMessage('PRESENCE', { nickname: myNickname, isHost });
+        cleanOfflineUsers();
+        if (isHost && !audio.paused) {
+          broadcastCurrentState();
         }
-      });
+      }, 4000);
+    }
 
-      conn.on('close', () => {
-        guestConnections = guestConnections.filter(c => c !== conn);
+    function rotateToNextBroker() {
+      currentBrokerIndex = (currentBrokerIndex + 1) % NETWORK_BROKERS.length;
+      updateNetBadge('connecting', 'Переключение на резерв...');
+      setTimeout(initNetwork, 1200);
+    }
+
+    function sendNetworkMessage(type, payload) {
+      if (!mqttClient || !mqttClient.connected) return;
+      const topic = `soundshare/v4/rooms/${currentRoomId}/${type.toLowerCase()}`;
+      const msg = JSON.stringify({
+        type,
+        senderId: myClientId,
+        isHost,
+        nickname: myNickname,
+        payload,
+        timestamp: Date.now()
+      });
+      mqttClient.publish(topic, msg);
+    }
+
+    // Рассылка полного состояния комнаты от DJ
+    function broadcastCurrentState() {
+      if (!isHost && !roomState.partyMode) return;
+      const snapshot = {
+        ...roomState,
+        currentTrackIndex: roomState.currentTrackIndex,
+        playbackTime: audio.currentTime,
+        isPlaying: !audio.paused,
+        updatedAt: Date.now()
+      };
+      sendNetworkMessage('SYNC_STATE', snapshot);
+    }
+
+    // Обработка входящих сетевых пакетов
+    function handleNetworkMessage(msg) {
+      const { type, payload, senderId, nickname } = msg;
+
+      if (type === 'PRESENCE') {
+        presenceMap.set(senderId, { nickname, isHost: msg.isHost, lastSeen: Date.now() });
         updateListenerCount();
-      });
-    }
-
-    function broadcastToGuests(payload, excludeConn = null) {
-      guestConnections.forEach(c => {
-        if (c !== excludeConn && c.open) {
-          try { c.send(payload); } catch (e) {}
+        if (msg.isHost && !isHost) {
+          roomState.hostName = nickname;
+          updateRoleUI();
         }
-      });
-    }
-
-    // Обработка входящих данных на клиенте-слушателе
-    function handleIncomingMessage(data) {
-      if (data.type === 'SYNC_STATE') {
-        const incoming = data.state;
-        const trackChanged = incoming.currentTrackIndex !== roomState.currentTrackIndex;
-        const tracksCountChanged = incoming.tracks.length !== roomState.tracks.length;
-
-        roomState = { ...incoming };
-
-        if (trackChanged || tracksCountChanged) {
-          renderPlaylist();
+      } else if (type === 'REQUEST_SYNC') {
+        if (isHost) {
+          broadcastCurrentState();
         }
-
-        updateUI();
-
-        // Смена трека в аудиоэлементе
-        const curTrack = roomState.tracks[roomState.currentTrackIndex] || roomState.tracks[0];
-        if (curTrack && audio.src !== curTrack.url) {
-          audio.src = curTrack.url;
-          audio.load();
+      } else if (type === 'SYNC_STATE') {
+        applyRemoteSync(payload);
+      } else if (type === 'CHAT') {
+        addChatMessage(nickname, payload.text, false);
+      } else if (type === 'REACTION') {
+        showFloatingEmoji(payload.emoji);
+      } else if (type === 'CLAIM_DJ') {
+        roomState.hostName = nickname;
+        if (isHost && senderId !== myClientId) {
+          isHost = false;
+          sessionStorage.removeItem(`soundshare_is_dj_${currentRoomId}`);
+          updateRoleUI();
+          showToast(`${nickname} занял позицию DJ`, 'info');
         }
-
-        // Расчет синхронного времени с компенсацией задержки сети
-        let targetTime = incoming.playbackTime || 0;
-        if (incoming.isPlaying && incoming.updatedAt) {
-          const elapsedSec = (Date.now() - incoming.updatedAt) / 1000;
-          targetTime += Math.max(0, elapsedSec);
-        }
-
-        // Коррекция рассинхронизации (только если разница больше 1.2 сек)
-        const diff = Math.abs(audio.currentTime - targetTime);
-        if (diff > 1.2 && isFinite(targetTime)) {
-          audio.currentTime = Math.min(targetTime, audio.duration || targetTime);
-        }
-
-        // Согласование воспроизведения/паузы
-        if (incoming.isPlaying) {
-          if (audio.paused) {
-            const p = audio.play();
-            if (p !== undefined) {
-              p.catch(() => audioUnlockBanner.classList.remove('hidden'));
-            }
-          }
-          setVinylPlayingUI(true);
-        } else {
-          if (!audio.paused) {
-            audio.pause();
-          }
-          setVinylPlayingUI(false);
-        }
-
-      } else if (data.type === 'CHAT') {
-        addChatMessage(data.sender, data.text, false);
-      } else if (data.type === 'REACTION') {
-        showFloatingEmoji(data.emoji);
-      } else if (data.type === 'LISTENERS_COUNT') {
-        listenerCountText.textContent = `${data.count} в сети`;
       }
     }
 
-    // Применение действия воспроизведения и рассылка всем участникам
-    function applyPlaybackAction(actionData) {
-      roomState = {
-        ...roomState,
-        ...actionData,
-        playbackTime: actionData.playbackTime !== undefined ? actionData.playbackTime : audio.currentTime,
-        isPlaying: actionData.isPlaying !== undefined ? actionData.isPlaying : !audio.paused,
-        updatedAt: Date.now()
-      };
+    function applyRemoteSync(incoming) {
+      const trackChanged = incoming.currentTrackIndex !== roomState.currentTrackIndex;
+      const playlistChanged = incoming.tracks.length !== roomState.tracks.length;
+
+      roomState = { ...incoming };
+
+      if (trackChanged || playlistChanged) {
+        renderPlaylist();
+      }
 
       updateUI();
 
-      if (isHost) {
-        broadcastToGuests({
-          type: 'SYNC_STATE',
-          state: roomState
-        });
-      } else if (hostConnection && hostConnection.open) {
-        hostConnection.send({
-          type: 'REQUEST_CONTROL',
-          actionData: actionData
-        });
+      // Смена аудиопотока
+      const curTrack = roomState.tracks[roomState.currentTrackIndex] || roomState.tracks[0];
+      if (curTrack && audio.src !== curTrack.url) {
+        audio.src = curTrack.url;
+        audio.load();
       }
+
+      // Расчет тайминга с компенсацией сетевой задержки
+      let targetTime = incoming.playbackTime || 0;
+      if (incoming.isPlaying && incoming.updatedAt) {
+        const elapsedSec = (Date.now() - incoming.updatedAt) / 1000;
+        targetTime += Math.max(0, elapsedSec);
+      }
+
+      // Корректируем расхождение таймлайна (если разница > 1 секунды)
+      const diff = Math.abs(audio.currentTime - targetTime);
+      if (diff > 1.0 && isFinite(targetTime)) {
+        audio.currentTime = Math.min(targetTime, audio.duration || targetTime);
+      }
+
+      // Синхронизация Play/Pause
+      if (incoming.isPlaying) {
+        if (audio.paused) {
+          const p = audio.play();
+          if (p !== undefined) {
+            p.catch(() => audioUnlockBanner.classList.remove('hidden'));
+          }
+        }
+        setVinylPlayingUI(true);
+      } else {
+        if (!audio.paused) {
+          audio.pause();
+        }
+        setVinylPlayingUI(false);
+      }
+    }
+
+    function cleanOfflineUsers() {
+      const now = Date.now();
+      let changed = false;
+      presenceMap.forEach((val, key) => {
+        if (now - val.lastSeen > 9000) {
+          presenceMap.delete(key);
+          changed = true;
+        }
+      });
+      if (changed) updateListenerCount();
+    }
+
+    function updateListenerCount() {
+      const count = presenceMap.size + 1; // + сам пользователь
+      listenerCountText.textContent = `${count} в сети`;
     }
 
     function canControl() {
       return isHost || roomState.partyMode;
     }
 
-    // Обновление интерфейса роли (DJ vs Гость)
     function updateRoleUI() {
       if (isHost) {
         myRoleText.textContent = `Вы DJ (Хост)`;
@@ -995,31 +922,17 @@
       btnForward10.disabled = !enabled;
     }
 
-    function updateP2PBadge(status, text) {
-      p2pStatusText.textContent = text;
+    function updateNetBadge(status, text) {
+      netStatusText.textContent = text;
       if (status === 'host') {
-        p2pStatusBadge.className = "flex items-center bg-brand-500/20 border border-brand-500/40 rounded-xl px-3 py-1.5 text-xs text-brand-accent";
-        p2pStatusBadge.firstElementChild.className = "w-2 h-2 rounded-full bg-brand-accent animate-pulse mr-2";
+        netStatusBadge.className = "flex items-center bg-brand-500/20 border border-brand-500/40 rounded-xl px-3 py-1.5 text-xs text-brand-accent";
+        netStatusBadge.firstElementChild.className = "w-2 h-2 rounded-full bg-brand-accent animate-pulse mr-2";
       } else if (status === 'guest') {
-        p2pStatusBadge.className = "flex items-center bg-emerald-500/20 border border-emerald-500/40 rounded-xl px-3 py-1.5 text-xs text-emerald-400";
-        p2pStatusBadge.firstElementChild.className = "w-2 h-2 rounded-full bg-emerald-400 mr-2";
-      } else if (status === 'connecting') {
-        p2pStatusBadge.className = "flex items-center bg-amber-500/20 border border-amber-500/40 rounded-xl px-3 py-1.5 text-xs text-amber-400";
-        p2pStatusBadge.firstElementChild.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping mr-2";
+        netStatusBadge.className = "flex items-center bg-emerald-500/20 border border-emerald-500/40 rounded-xl px-3 py-1.5 text-xs text-emerald-400";
+        netStatusBadge.firstElementChild.className = "w-2 h-2 rounded-full bg-emerald-400 mr-2";
       } else {
-        p2pStatusBadge.className = "flex items-center bg-rose-500/20 border border-rose-500/40 rounded-xl px-3 py-1.5 text-xs text-rose-400";
-        p2pStatusBadge.firstElementChild.className = "w-2 h-2 rounded-full bg-rose-400 mr-2";
-      }
-    }
-
-    function updateListenerCount() {
-      const count = isHost ? (guestConnections.length + 1) : 2;
-      listenerCountText.textContent = `${count} в сети`;
-      if (isHost) {
-        broadcastToGuests({
-          type: 'LISTENERS_COUNT',
-          count: count
-        });
+        netStatusBadge.className = "flex items-center bg-amber-500/20 border border-amber-500/40 rounded-xl px-3 py-1.5 text-xs text-amber-400";
+        netStatusBadge.firstElementChild.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping mr-2";
       }
     }
 
@@ -1073,7 +986,6 @@
       updateRoleUI();
     }
 
-    // Переключение трека
     function switchTrack(index) {
       if (!canControl()) {
         showToast("Только DJ может выбирать трек из списка!", "warning");
@@ -1082,22 +994,20 @@
       const track = roomState.tracks[index];
       if (!track) return;
 
+      roomState.currentTrackIndex = index;
       audio.src = track.url;
       audio.currentTime = 0;
       
       const p = audio.play();
       if (p !== undefined) {
         p.then(() => {
-          applyPlaybackAction({
-            currentTrackIndex: index,
-            playbackTime: 0,
-            isPlaying: true
-          });
+          broadcastCurrentState();
         }).catch(() => {
           audioUnlockBanner.classList.remove('hidden');
         });
       }
       renderPlaylist();
+      updateUI();
     }
 
     // Play / Pause кнопка
@@ -1110,12 +1020,12 @@
         const p = audio.play();
         if (p !== undefined) {
           p.then(() => {
-            applyPlaybackAction({ isPlaying: true, playbackTime: audio.currentTime });
+            broadcastCurrentState();
           }).catch(() => audioUnlockBanner.classList.remove('hidden'));
         }
       } else {
         audio.pause();
-        applyPlaybackAction({ isPlaying: false, playbackTime: audio.currentTime });
+        broadcastCurrentState();
       }
     });
 
@@ -1133,19 +1043,17 @@
 
     btnRewind10.addEventListener('click', () => {
       if (!canControl()) return;
-      const target = Math.max(0, audio.currentTime - 10);
-      audio.currentTime = target;
-      applyPlaybackAction({ playbackTime: target });
+      audio.currentTime = Math.max(0, audio.currentTime - 10);
+      broadcastCurrentState();
     });
 
     btnForward10.addEventListener('click', () => {
       if (!canControl()) return;
-      const target = Math.min(audio.duration || 9999, audio.currentTime + 10);
-      audio.currentTime = target;
-      applyPlaybackAction({ playbackTime: target });
+      audio.currentTime = Math.min(audio.duration || 9999, audio.currentTime + 10);
+      broadcastCurrentState();
     });
 
-    // Перемотка таймлайна
+    // Перемотка
     seekSlider.addEventListener('input', () => {
       if (!canControl() || !audio.duration) return;
       const targetTime = (seekSlider.value / 100) * audio.duration;
@@ -1156,10 +1064,9 @@
       if (!canControl() || !audio.duration) return;
       const targetTime = (seekSlider.value / 100) * audio.duration;
       audio.currentTime = targetTime;
-      applyPlaybackAction({ playbackTime: targetTime });
+      broadcastCurrentState();
     });
 
-    // Слушатели аудиоплеера
     audio.addEventListener('timeupdate', () => {
       if (!audio.duration) return;
       const pct = (audio.currentTime / audio.duration) * 100;
@@ -1175,7 +1082,7 @@
       }
     });
 
-    // Регулировка локальной громкости
+    // Личная громкость
     volumeSlider.addEventListener('input', (e) => {
       audio.volume = parseFloat(e.target.value);
       audio.muted = false;
@@ -1187,37 +1094,38 @@
       volumeIcon.className = audio.muted ? "fa-solid fa-volume-xmark text-rose-400" : "fa-solid fa-volume-high";
     });
 
-    // Переключение Party Mode (только создатель)
+    // Переключение Party Mode
     btnTogglePartyMode.addEventListener('click', () => {
       if (!isHost) {
         showToast("Только создатель комнаты может менять режим доступа.", "warning");
         return;
       }
-      const newMode = !roomState.partyMode;
-      applyPlaybackAction({ partyMode: newMode });
-      showToast(newMode ? "Party Mode: Теперь все гости могут переключать треки!" : "DJ Mode: Только вы управляете звуком.", "info");
+      roomState.partyMode = !roomState.partyMode;
+      broadcastCurrentState();
+      updateRoleUI();
+      showToast(roomState.partyMode ? "Party Mode: Теперь все гости могут переключать треки!" : "DJ Mode: Только вы управляете звуком.", "info");
     });
 
-    // Кнопка гостя «Стать DJ»
+    // Перехват роли DJ гостем
     btnClaimDJ.addEventListener('click', () => {
       isHost = true;
+      sessionStorage.setItem(`soundshare_is_dj_${currentRoomId}`, 'true');
       roomState.hostName = myNickname;
-      if (hostConnection && hostConnection.open) {
-        hostConnection.send({ type: 'CLAIM_DJ', nickname: myNickname });
-      }
+      sendNetworkMessage('CLAIM_DJ', {});
       updateRoleUI();
-      showToast("Вы взяли на себя роль DJ комнаты!", "success");
+      updateNetBadge('host', 'DJ Эфир активен');
+      broadcastCurrentState();
+      showToast("Вы взяли на себя управление комнатой (DJ)!", "success");
     });
 
-    // Разблокировка звука при автоплей-ограничениях
+    // Разблокировка автоплея
     audioUnlockBanner.addEventListener('click', () => {
       audio.play().then(() => {
         audioUnlockBanner.classList.add('hidden');
         setVinylPlayingUI(true);
-      }).catch(e => console.warn("Autoplay unlock:", e));
+      }).catch(e => console.warn("Unlock failed:", e));
     });
 
-    // Отрисовка списка треков
     function renderPlaylist() {
       playlistContainer.innerHTML = '';
       tracksBadgeCount.textContent = `${roomState.tracks.length} треков`;
@@ -1231,8 +1139,6 @@
             : 'bg-dark-bg/60 border-dark-border/60 hover:bg-dark-hover text-slate-300'
         }`;
 
-        const coverSrc = track.artwork || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop&q=80';
-
         let badgeHtml = '';
         if (track.platform === 'apple') {
           badgeHtml = '<span class="text-[10px] text-slate-300 bg-black/60 px-1.5 py-0.5 rounded border border-white/20"><i class="fa-brands fa-apple mr-0.5"></i>Apple</span>';
@@ -1243,7 +1149,7 @@
         item.innerHTML = `
           <div class="flex items-center space-x-3 overflow-hidden">
             <div class="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-dark-border shadow-sm">
-              <img src="${coverSrc}" alt="cover" class="w-full h-full object-cover">
+              <img src="${track.artwork}" alt="cover" class="w-full h-full object-cover">
               ${isCurrent && !audio.paused ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><i class="fa-solid fa-chart-simple text-brand-accent text-xs animate-bounce"></i></div>' : ''}
             </div>
             <div class="truncate">
@@ -1268,32 +1174,24 @@
       });
     }
 
-    // Скопировать индивидуальную ссылку
     btnShareRoom.addEventListener('click', () => {
       const shareUrl = `${window.location.origin}${window.location.pathname}#room=${currentRoomId}`;
       copyTextToClipboard(shareUrl);
-      showToast("Уникальная ссылка на комнату скопирована! Отправьте её другу 🎧", "success");
+      showToast("Индивидуальная ссылка на комнату скопирована! Отправьте её другу 🎧", "success");
     });
 
-    // Создать новую комнату
     btnNewRoom.addEventListener('click', () => {
-      const newRoom = generateRandomRoomId();
-      window.location.hash = `room=${newRoom}`;
+      sessionStorage.clear();
+      window.location.hash = '';
       window.location.reload();
     });
 
-    // Реакции и эмодзи
+    // Реакции
     document.querySelectorAll('.reaction-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const emoji = btn.dataset.emoji;
         showFloatingEmoji(emoji);
-
-        const payload = { type: 'REACTION', emoji };
-        if (isHost) {
-          broadcastToGuests(payload);
-        } else if (hostConnection && hostConnection.open) {
-          hostConnection.send(payload);
-        }
+        sendNetworkMessage('REACTION', { emoji });
       });
     });
 
@@ -1305,29 +1203,17 @@
       el.style.left = `${20 + Math.random() * 60}%`;
       el.style.bottom = '20px';
       container.appendChild(el);
-      setTimeout(() => el.remove(), 2600);
+      setTimeout(() => el.remove(), 2500);
     }
 
-    // Чат комнаты
+    // Чат
     chatForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const val = chatInput.value.trim();
       if (!val) return;
 
       addChatMessage(myNickname, val, true);
-
-      const payload = {
-        type: 'CHAT',
-        sender: myNickname,
-        text: val
-      };
-
-      if (isHost) {
-        broadcastToGuests(payload);
-      } else if (hostConnection && hostConnection.open) {
-        hostConnection.send(payload);
-      }
-
+      sendNetworkMessage('CHAT', { text: val });
       chatInput.value = '';
     });
 
@@ -1347,7 +1233,7 @@
       chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
     }
 
-    // Модалка стримингов (Apple Music & Яндекс Музыка)
+    // Модалка поиска стримингов
     if (btnOpenStreamImportModal) {
       btnOpenStreamImportModal.addEventListener('click', () => {
         if (!canControl()) {
@@ -1405,12 +1291,12 @@
         const data = await res.json();
         renderSearchResults(data.results || [], detectedPlatform);
       } catch (err) {
-        console.warn("Поиск треков:", err);
+        console.warn("Ошибка поиска треков:", err);
         smartResultsContainer.innerHTML = `
           <div class="text-center p-6 text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-2xl">
             <i class="fa-solid fa-triangle-exclamation text-lg mb-2"></i>
-            <p class="font-semibold">Не удалось найти поток</p>
-            <p class="text-[11px] text-slate-400 mt-1">Попробуйте ввести исполнителя и песню текстом (например "The Weeknd")</p>
+            <p class="font-semibold">Не удалось связаться с каталогом треков</p>
+            <p class="text-[11px] text-slate-400 mt-1">Попробуйте ввести название трека текстом</p>
           </div>
         `;
       } finally {
@@ -1423,7 +1309,7 @@
         smartResultsContainer.innerHTML = `
           <div class="text-center p-6 text-slate-400 text-xs">
             <i class="fa-solid fa-face-frown text-xl mb-1 text-slate-500"></i>
-            <p>Ничего не найдено. Попробуйте уточнить поисковый запрос.</p>
+            <p>Ничего не найдено. Попробуйте изменить поисковый запрос.</p>
           </div>
         `;
         return;
@@ -1431,7 +1317,7 @@
 
       smartResultsContainer.innerHTML = '';
       items.forEach(item => {
-        const hdArtwork = item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80';
+        const hdArtwork = item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : createCoverSvg(item.trackName, '#7c3aed', '#ec4899');
         const appleTrackUrl = item.trackViewUrl || `https://music.apple.com/ru/search?term=${encodeURIComponent(item.artistName + ' ' + item.trackName)}`;
         const yandexTrackUrl = `https://music.yandex.ru/search?text=${encodeURIComponent(item.artistName + ' ' + item.trackName)}`;
 
@@ -1478,21 +1364,21 @@
             duration: formatTime(item.trackTimeMillis ? item.trackTimeMillis / 1000 : 30)
           };
 
-          const updated = [...roomState.tracks, newTrack];
-          const newIndex = updated.length - 1;
+          roomState.tracks.push(newTrack);
+          const newIndex = roomState.tracks.length - 1;
 
-          applyPlaybackAction({ tracks: updated });
           renderPlaylist();
           smartMusicModal.classList.add('hidden');
           showToast(`Трек "${item.trackName}" добавлен в плейлист!`, 'success');
           switchTrack(newIndex);
+          broadcastCurrentState();
         });
 
         smartResultsContainer.appendChild(card);
       });
     }
 
-    // Добавление локального файла или ссылки
+    // Модалка загрузки локального аудио
     const addTrackModal = document.getElementById('addTrackModal');
     document.getElementById('btnOpenAddTrackModal').addEventListener('click', () => {
       if (!canControl()) {
@@ -1512,7 +1398,7 @@
       document.getElementById('inputTrackTitle').value = cleanName;
       document.getElementById('inputTrackArtist').value = myNickname;
       document.getElementById('inputTrackUrl').value = URL.createObjectURL(file);
-      showToast(`Файл "${file.name}" загружен в память плеера!`, 'info');
+      showToast(`Файл "${file.name}" готов к воспроизведению!`, 'info');
     });
 
     document.getElementById('formAddTrack').addEventListener('submit', (e) => {
@@ -1527,18 +1413,19 @@
         artist,
         url,
         genre: 'Custom',
-        artwork: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80',
+        artwork: createCoverSvg(title, '#6366f1', '#06b6d4'),
         duration: 'Custom'
       };
 
-      const updated = [...roomState.tracks, newTrack];
-      applyPlaybackAction({ tracks: updated });
+      roomState.tracks.push(newTrack);
+      broadcastCurrentState();
+      renderPlaylist();
       addTrackModal.classList.add('hidden');
       document.getElementById('formAddTrack').reset();
       showToast(`Трек "${title}" добавлен!`, 'success');
     });
 
-    // Визуализатор эквалайзера (легкий, автономный, устойчивый к CORS)
+    // Визуализатор звука
     function drawVisualizerBars() {
       requestAnimationFrame(drawVisualizerBars);
       const width = visualizerCanvas.width = visualizerCanvas.parentElement.clientWidth;
@@ -1566,7 +1453,6 @@
       }
     }
 
-    // Вспомогательные функции
     function formatTime(sec) {
       if (isNaN(sec) || !isFinite(sec)) return '0:00';
       const m = Math.floor(sec / 60);
@@ -1618,12 +1504,12 @@
       document.body.removeChild(textArea);
     }
 
-    // Старт приложения при загрузке страницы
     window.addEventListener('load', () => {
       audio.src = roomState.tracks[0].url;
+      vinylCoverImg.src = roomState.tracks[0].artwork;
       renderPlaylist();
       drawVisualizerBars();
-      initP2PNetworking();
+      initNetwork();
     });
   </script>
 </body>
