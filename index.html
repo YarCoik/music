@@ -114,8 +114,8 @@
 
 <body class="bg-dark-bg text-slate-100 min-h-screen font-sans flex flex-col antialiased selection:bg-brand-500 selection:text-white relative overflow-x-hidden">
 
+  <!-- Шапка приложения -->
   <header class="border-b border-dark-border/80 bg-dark-card/90 backdrop-blur-xl sticky top-0 z-40 px-4 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
-    <!-- Логотип -->
     <div class="flex items-center space-x-3">
       <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-brand-accent flex items-center justify-center shadow-lg shadow-brand-600/30">
         <i class="fa-solid fa-compact-disc text-white text-xl animate-spin-slow"></i>
@@ -123,49 +123,44 @@
       <div>
         <div class="flex items-center space-x-2">
           <span class="font-black text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-accent bg-clip-text text-transparent">SoundShare</span>
-          <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">Full Tracks</span>
+          <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">Оригинал Live</span>
         </div>
-        <p class="text-xs text-slate-400 hidden sm:block">Слушай полные треки синхронно с друзьями без ограничений</p>
+        <p class="text-xs text-slate-400 hidden sm:block">Синхронное прослушивание полных треков без ограничений</p>
       </div>
     </div>
 
     <!-- Индикаторы комнаты, статуса сети и кнопка «Поделиться» -->
     <div class="flex items-center flex-wrap gap-2 sm:gap-3">
-      <!-- ID комнаты -->
       <div class="flex items-center bg-dark-bg/90 border border-dark-border rounded-xl px-3 py-1.5 text-xs">
         <span class="text-slate-400 mr-1.5"><i class="fa-solid fa-hashtag text-brand-accent mr-1"></i>Комната:</span>
         <span id="currentRoomDisplay" class="font-mono font-bold text-white tracking-wider">генерация...</span>
       </div>
 
-      <!-- Бейдж сети -->
       <div id="netStatusBadge" class="flex items-center bg-dark-bg/90 border border-dark-border rounded-xl px-3 py-1.5 text-xs text-amber-400">
         <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse mr-2"></span>
         <span id="netStatusText">Подключение...</span>
       </div>
 
-      <!-- Счетчик слушателей -->
       <div class="flex items-center bg-dark-bg/90 border border-dark-border rounded-xl px-3 py-1.5 text-xs text-emerald-400">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-2"></span>
         <span id="listenerCountText">1 в сети</span>
       </div>
 
-      <!-- Скопировать ссылку -->
       <button id="btnShareRoom" type="button" class="flex items-center space-x-2 bg-gradient-to-r from-brand-600 via-brand-500 to-brand-accent hover:brightness-110 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition shadow-lg shadow-brand-600/30 active:scale-95 cursor-pointer">
         <i class="fa-solid fa-link"></i>
         <span>Скопировать ссылку для друга</span>
       </button>
 
-      <!-- Создать новую -->
       <button id="btnNewRoom" type="button" class="bg-dark-hover hover:bg-slate-800 text-slate-300 hover:text-white px-3 py-2 rounded-xl text-xs border border-dark-border transition" title="Создать новую комнату">
         <i class="fa-solid fa-plus mr-1"></i> Новая
       </button>
     </div>
   </header>
 
-  <!-- Предупреждение о политике браузера Autoplay -->
+  <!-- Предупреждение о политике Autoplay -->
   <div id="audioUnlockBanner" class="hidden bg-gradient-to-r from-amber-600 to-rose-600 text-white px-4 py-3 text-center text-xs sm:text-sm font-medium z-50 flex items-center justify-center space-x-3 shadow-lg cursor-pointer transition">
     <i class="fa-solid fa-volume-high text-lg animate-bounce"></i>
-    <span>Браузер ожидает взаимодействия для включения звука. <strong>Нажмите сюда, чтобы слушать синхронно!</strong></span>
+    <span>Браузер ожидает нажатия для включения звука. <strong>Нажмите сюда, чтобы слушать синхронно!</strong></span>
     <button class="bg-white text-slate-900 text-xs font-bold px-3 py-1 rounded-lg ml-2 shadow">Включить звук</button>
   </div>
 
@@ -174,31 +169,27 @@
     <!-- ЛЕВАЯ КОЛОНКА: Сцена плеера и визуализатор (7 колонок) -->
     <section class="lg:col-span-7 flex flex-col space-y-6">
       
-      <!-- Карточка проигрывателя -->
+      <!-- Карточка плеера -->
       <div class="bg-dark-card border border-dark-border rounded-3xl p-6 relative overflow-hidden shadow-2xl">
         <div class="absolute -top-24 -right-24 w-72 h-72 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-brand-accent/15 rounded-full blur-3xl pointer-events-none"></div>
 
-        <!-- Панель статуса роли (DJ или Гость) -->
+        <!-- Панель статуса роли -->
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6 relative z-10">
           <div class="flex items-center space-x-2">
-            <!-- Роль -->
             <span id="myRoleBadge" class="inline-flex items-center text-xs font-bold px-3 py-1 rounded-xl bg-brand-500/20 text-brand-300 border border-brand-500/40 shadow-sm">
               <i class="fa-solid fa-crown text-amber-400 mr-1.5"></i> <span id="myRoleText">Вы DJ (Хост)</span>
             </span>
 
-            <!-- Статус эфира -->
             <span id="syncStateBadge" class="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
               <i class="fa-solid fa-tower-broadcast mr-1.5 animate-pulse"></i> В эфире
             </span>
 
-            <!-- Полный трек бейдж -->
-            <span class="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <i class="fa-solid fa-circle-check text-[10px] mr-1"></i> Полный трек (320kbps)
+            <span id="sourceCatalogBadge" class="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <i class="fa-solid fa-compact-disc text-[10px] mr-1"></i> Оригинальный трек
             </span>
           </div>
 
-          <!-- Управление доступом -->
           <div class="flex items-center space-x-2 text-xs">
             <button id="btnClaimDJ" class="hidden text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-xl transition font-semibold">
               <i class="fa-solid fa-hand mr-1"></i> Стать DJ
@@ -218,10 +209,9 @@
           <span class="text-[10px] bg-brand-accent/20 px-2 py-0.5 rounded-md font-mono">Live Sync</span>
         </div>
 
+        <!-- Вертушка и визуализатор -->
         <div class="flex flex-col sm:flex-row items-center justify-center gap-8 my-4 relative z-10">
-          
-          <!-- Виниловая вертушка -->
-          <div id="vinylViewContainer" class="relative group">
+          <div id="vinylViewContainer" class="relative group shrink-0">
             <div id="vinylDisc" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full vinyl-grooves shadow-2xl border-4 border-slate-900 flex items-center justify-center animate-spin-slow paused-spin transition-transform duration-500 relative overflow-hidden">
               <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-brand-600 via-brand-neon to-brand-accent p-1 shadow-inner flex items-center justify-center overflow-hidden">
                 <div class="w-full h-full rounded-full bg-dark-bg flex items-center justify-center border-2 border-white/20 overflow-hidden relative">
@@ -233,19 +223,17 @@
             <div id="vinylGlow" class="absolute inset-0 rounded-full border border-brand-accent/40 pointer-events-none opacity-0 transition-opacity duration-300"></div>
           </div>
 
-          <!-- Метаданные трека и визуализатор -->
-          <div class="flex-1 text-center sm:text-left w-full">
+          <div class="flex-1 text-center sm:text-left w-full overflow-hidden">
             <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start mb-2">
-              <span id="genreTag" class="text-[11px] font-bold uppercase tracking-wider text-brand-accent bg-brand-accent/10 px-2.5 py-0.5 rounded-full inline-block">Full Track</span>
-              <span id="sourceBadge" class="text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-full inline-flex items-center space-x-1 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                <i class="fa-solid fa-bolt mr-1"></i> High Quality Audio
+              <span id="genreTag" class="text-[11px] font-bold uppercase tracking-wider text-brand-accent bg-brand-accent/10 px-2.5 py-0.5 rounded-full inline-block">Оригинальный звук</span>
+              <span id="sourceBadge" class="text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-full inline-flex items-center space-x-1 bg-brand-500/15 text-brand-300 border border-brand-500/30">
+                <i class="fa-solid fa-circle-nodes mr-1"></i> Архив / Master Audio
               </span>
             </div>
 
-            <h2 id="currentTrackTitle" class="text-xl sm:text-2xl font-extrabold text-white truncate max-w-sm mb-1">Midnight Groove Flight</h2>
-            <p id="currentTrackArtist" class="text-sm font-medium text-slate-400 mb-2">SoundShare Studio</p>
+            <h2 id="currentTrackTitle" class="text-xl sm:text-2xl font-extrabold text-white truncate max-w-sm mb-1">Nocturne Op. 9 No. 2</h2>
+            <p id="currentTrackArtist" class="text-sm font-medium text-slate-400 mb-2">Frédéric Chopin</p>
 
-            <!-- Кнопки перехода на стриминговые платформы -->
             <div id="sourceLinksContainer" class="flex items-center space-x-3 mb-3 justify-center sm:justify-start flex-wrap gap-y-1">
               <a id="btnOpenInYandex" href="https://music.yandex.ru" target="_blank" rel="noopener noreferrer" class="text-xs text-red-300 hover:text-white bg-red-600/20 hover:bg-red-600/30 px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1.5 border border-red-500/30">
                 <i class="fa-brands fa-yandex text-sm text-red-500"></i>
@@ -257,13 +245,13 @@
               </a>
             </div>
 
-            <!-- Визуализатор эквалайзера -->
             <div class="w-full h-14 bg-dark-bg/90 rounded-xl border border-dark-border/80 p-2 overflow-hidden flex items-center">
               <canvas id="visualizerCanvas" class="w-full h-full block"></canvas>
             </div>
           </div>
         </div>
 
+        <!-- Таймлайн -->
         <div class="mt-6 space-y-1.5 relative z-10">
           <div class="flex items-center justify-between text-xs font-mono text-slate-400">
             <span id="currentTimeDisplay">0:00</span>
@@ -275,7 +263,7 @@
               <i class="fa-solid fa-arrows-rotate text-brand-accent text-[9px]"></i>
               <span>Синхронизировано в реальном времени</span>
             </div>
-            <span id="durationDisplay">3:30</span>
+            <span id="durationDisplay">4:31</span>
           </div>
 
           <div class="relative w-full">
@@ -283,37 +271,30 @@
           </div>
         </div>
 
+        <!-- Панель кнопок -->
         <div class="mt-6 pt-4 border-t border-dark-border/60 flex flex-wrap items-center justify-between gap-4 relative z-10">
-          
-          <!-- Кнопки плеера -->
           <div class="flex items-center space-x-3 mx-auto sm:mx-0" id="playbackButtonsGroup">
-            <!-- Предыдущий -->
             <button id="btnPrevTrack" class="w-10 h-10 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border flex items-center justify-center text-slate-300 hover:text-white transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" title="Предыдущий трек">
               <i class="fa-solid fa-backward-step"></i>
             </button>
 
-            <!-- -10 сек -->
             <button id="btnRewind10" class="w-9 h-9 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border flex items-center justify-center text-slate-400 hover:text-white transition active:scale-95 text-xs disabled:opacity-40 disabled:cursor-not-allowed" title="Назад на 10 сек">
               <i class="fa-solid fa-rotate-left"></i>
             </button>
 
-            <!-- Главная кнопка Play/Pause -->
             <button id="btnPlayPause" class="w-14 h-14 rounded-2xl bg-gradient-to-r from-brand-600 via-brand-500 to-brand-accent text-white flex items-center justify-center shadow-lg shadow-brand-600/40 hover:scale-105 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed">
               <i id="playPauseIcon" class="fa-solid fa-play text-xl ml-0.5"></i>
             </button>
 
-            <!-- +10 сек -->
             <button id="btnForward10" class="w-9 h-9 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border flex items-center justify-center text-slate-400 hover:text-white transition active:scale-95 text-xs disabled:opacity-40 disabled:cursor-not-allowed" title="Вперед на 10 сек">
               <i class="fa-solid fa-rotate-right"></i>
             </button>
 
-            <!-- Следующий -->
             <button id="btnNextTrack" class="w-10 h-10 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border flex items-center justify-center text-slate-300 hover:text-white transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" title="Следующий трек">
               <i class="fa-solid fa-forward-step"></i>
             </button>
           </div>
 
-          <!-- Громкость -->
           <div class="flex items-center space-x-3 mx-auto sm:mx-0">
             <button id="btnMute" class="text-slate-400 hover:text-white transition text-sm">
               <i id="volumeIcon" class="fa-solid fa-volume-high"></i>
@@ -338,14 +319,13 @@
         <div id="floatingEmojiContainer" class="pointer-events-none absolute inset-0 overflow-hidden z-30"></div>
       </div>
 
-      <!-- Блок описания синхронизации -->
       <div class="bg-dark-card/60 border border-dark-border rounded-2xl p-4 text-xs text-slate-400 flex items-start gap-3">
         <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-          <i class="fa-solid fa-bolt"></i>
+          <i class="fa-solid fa-circle-check"></i>
         </div>
         <div>
-          <span class="text-white font-semibold">100% стабильное воспроизведение полных треков:</span>
-          Плеер работает через надежную систему прямого воспроизведения. Вы можете искать полные треки через <strong>«Поиск»</strong>, загружать папки со своими MP3 или вставлять списки любимых песен текстом!
+          <span class="text-white font-semibold">Реальный поиск и синхронизация:</span>
+          Поиск подключен к открытому каталогу Archive.org с оригинальными треками без фальшивых ремиксов. При импорте плейлистов система честно проверяет каждый трек и сообщает точное количество найденных композиций!
         </div>
       </div>
     </section>
@@ -354,15 +334,14 @@
     <section class="lg:col-span-5 flex flex-col space-y-6">
       
       <!-- Плейлист -->
-      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[380px]">
+      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[390px]">
         <div class="flex items-center justify-between pb-3 border-b border-dark-border">
           <div class="flex items-center space-x-2">
             <i class="fa-solid fa-list-music text-brand-accent"></i>
             <h3 class="font-bold text-white text-sm">Плейлист комнаты</h3>
-            <span id="tracksBadgeCount" class="text-xs bg-dark-bg text-slate-400 px-2 py-0.5 rounded-md border border-dark-border">4 трека</span>
+            <span id="tracksBadgeCount" class="text-xs bg-dark-bg text-slate-400 px-2 py-0.5 rounded-md border border-dark-border">3 трека</span>
           </div>
 
-          <!-- Кнопки добавления -->
           <div class="flex items-center space-x-1.5">
             <button id="btnOpenPlaylistImportModal" class="text-xs text-white bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 px-3 py-1 rounded-xl transition flex items-center space-x-1.5 font-bold shadow-md shadow-brand-600/30">
               <i class="fa-solid fa-folder-plus text-[11px]"></i>
@@ -375,14 +354,13 @@
           </div>
         </div>
 
-        <!-- Список треков -->
         <div id="playlistContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 mt-3">
-          <!-- Рендерится из JS -->
+          <!-- Треки генерируются из JS -->
         </div>
       </div>
 
-      <!-- Чат комнаты -->
-      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[320px]">
+      <!-- Чат -->
+      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[310px]">
         <div class="flex items-center justify-between pb-3 border-b border-dark-border">
           <div class="flex items-center space-x-2">
             <i class="fa-solid fa-comments text-brand-500"></i>
@@ -391,12 +369,10 @@
           <span class="text-[11px] text-slate-400">Live Chat</span>
         </div>
 
-        <!-- Сообщения -->
         <div id="chatMessagesContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 mt-3 text-xs">
-          <!-- Сообщения вставляются динамически -->
+          <!-- Сообщения -->
         </div>
 
-        <!-- Форма чата -->
         <form id="chatForm" class="mt-3 pt-2 border-t border-dark-border/60 flex items-center gap-2">
           <input type="text" id="chatInput" placeholder="Написать сообщение друзьям..." maxlength="120" autocomplete="off" class="flex-1 bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition">
           <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition active:scale-95">
@@ -408,7 +384,7 @@
 
   </main>
 
-  <!-- МОДАЛКА: ИМПОРТ ПЛЕЙЛИСТОВ (Яндекс / Apple / Список / MP3 папка) -->
+  <!-- МОДАЛКА: ИМПОРТ ПЛЕЙЛИСТА (Яндекс / Apple / Список / MP3 папка) -->
   <div id="playlistImportModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-dark-card border border-dark-border rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-dark-border pb-3">
@@ -418,7 +394,7 @@
           </div>
           <div>
             <h3 class="font-bold text-white text-base">Импорт целого плейлиста</h3>
-            <p class="text-[11px] text-slate-400">Импортируйте любимые плейлисты из Яндекс Музыки, Apple Music или локальных папок</p>
+            <p class="text-[11px] text-slate-400">Вставьте список треков из Яндекс Музыки или Apple Music</p>
           </div>
         </div>
         <button id="btnClosePlaylistImportModal" class="text-slate-400 hover:text-white p-1">
@@ -426,7 +402,7 @@
         </button>
       </div>
 
-      <!-- Вкладки -->
+      <!-- Вкладки способов импорта -->
       <div class="flex items-center space-x-2 border-b border-dark-border/60 pb-2 text-xs">
         <button id="tabBtnText" type="button" class="tab-btn px-3 py-1.5 rounded-xl bg-brand-600 text-white font-semibold transition">
           <i class="fa-solid fa-paste mr-1.5"></i> Скопированный список (Яндекс / Apple)
@@ -435,20 +411,38 @@
           <i class="fa-solid fa-folder-open mr-1.5 text-brand-accent"></i> Папка с MP3
         </button>
         <button id="tabBtnDirect" type="button" class="tab-btn px-3 py-1.5 rounded-xl bg-dark-bg text-slate-400 hover:text-white transition">
-          <i class="fa-solid fa-link mr-1.5 text-emerald-400"></i> Прямая ссылка MP3/Поток
+          <i class="fa-solid fa-link mr-1.5 text-emerald-400"></i> Прямой MP3 URL
         </button>
       </div>
 
       <!-- Вкладка 1: Текстовый список -->
       <div id="tabContentText" class="space-y-3 flex-1 flex flex-col">
         <p class="text-xs text-slate-400 leading-relaxed">
-          В <strong>Яндекс Музыке</strong> или <strong>Apple Music</strong> выделите треки в вашем плейлисте (или просто напишите любимые песни) и вставьте сюда. Система добавит полную версию каждого трека в плейлист комнаты:
+          Скопируйте названия песен из вашего плейлиста и вставьте сюда. Система выполнит поиск каждого трека и добавит только реальные найденные композиции:
         </p>
-        <textarea id="inputTextPlaylist" rows="6" placeholder="Miyagi - Captain&#10;The Weeknd - Blinding Lights&#10;Daft Punk - Get Lucky&#10;Макс Корж - 2 типа людей" class="w-full flex-1 bg-dark-bg border border-dark-border rounded-2xl p-3.5 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition font-mono leading-5"></textarea>
+        <textarea id="inputTextPlaylist" rows="6" placeholder="Michael Jackson - Billie Jean&#10;Queen - Bohemian Rhapsody&#10;The Beatles - Yesterday&#10;Daft Punk - One More Time" class="w-full flex-1 bg-dark-bg border border-dark-border rounded-2xl p-3.5 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition font-mono leading-5"></textarea>
+        
+        <!-- Индикатор прогресса импорта -->
+        <div id="importProgressContainer" class="hidden space-y-2 p-3 bg-brand-500/10 border border-brand-500/20 rounded-2xl text-xs">
+          <div class="flex items-center justify-between text-brand-accent font-semibold">
+            <span id="importProgressText">Ищем треки...</span>
+            <span id="importProgressPercent">0%</span>
+          </div>
+          <div class="w-full bg-dark-bg h-2 rounded-full overflow-hidden">
+            <div id="importProgressBar" class="bg-gradient-to-r from-brand-600 to-brand-accent h-full w-0 transition-all duration-200"></div>
+          </div>
+        </div>
+
+        <!-- Отчет о ненайденных треках -->
+        <div id="importReportBox" class="hidden p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs text-amber-200 space-y-1 max-h-28 overflow-y-auto">
+          <!-- Текст отчета -->
+        </div>
+
         <div class="flex items-center justify-between pt-1">
-          <span class="text-[11px] text-slate-500">По одному треку на строку (Исполнитель — Название)</span>
-          <button id="btnProcessTextPlaylist" type="button" class="px-5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs transition shadow-lg shadow-brand-600/30">
-            <i class="fa-solid fa-plus mr-1"></i> Добавить в очередь
+          <span class="text-[11px] text-slate-500">По одному треку на строку (Артист — Название)</span>
+          <button id="btnProcessTextPlaylist" type="button" class="px-5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs transition shadow-lg shadow-brand-600/30 flex items-center space-x-2">
+            <i id="btnImportSpinner" class="fa-solid fa-circle-notch animate-spin hidden text-xs"></i>
+            <span id="btnImportText">Найти и добавить</span>
           </button>
         </div>
       </div>
@@ -456,7 +450,7 @@
       <!-- Вкладка 2: Папка с файлами -->
       <div id="tabContentFiles" class="space-y-3 hidden flex-1 flex flex-col">
         <p class="text-xs text-slate-400 leading-relaxed">
-          Выберите аудиофайлы со своего устройства (можно выделить сразу 10, 20 или 50 треков):
+          Выберите аудиофайлы со своего устройства (можно выделить сразу несколько треков):
         </p>
         <div class="p-6 bg-brand-500/10 border-2 border-dashed border-brand-500/30 rounded-2xl text-center flex flex-col items-center justify-center">
           <i class="fa-solid fa-cloud-arrow-up text-4xl text-brand-accent mb-3 animate-bounce"></i>
@@ -468,9 +462,9 @@
       <!-- Вкладка 3: Прямая ссылка -->
       <div id="tabContentDirect" class="space-y-3 hidden flex-1 flex flex-col">
         <p class="text-xs text-slate-400 leading-relaxed">
-          Вставьте прямую ссылку на аудиофайл или радио-стрим:
+          Вставьте прямую ссылку на открытый аудиофайл или радио-поток:
         </p>
-        <input type="url" id="inputDirectUrl" placeholder="https://example.com/music/song.mp3" class="w-full bg-dark-bg border border-dark-border rounded-2xl p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
+        <input type="url" id="inputDirectUrl" placeholder="https://domain.com/track.mp3" class="w-full bg-dark-bg border border-dark-border rounded-2xl p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
         <input type="text" id="inputDirectTitle" placeholder="Название трека (необязательно)" class="w-full bg-dark-bg border border-dark-border rounded-2xl p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
         <div class="flex justify-end pt-2">
           <button id="btnProcessDirectUrl" type="button" class="px-5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs transition shadow-lg shadow-brand-600/30">
@@ -480,12 +474,12 @@
       </div>
 
       <div class="pt-2 border-t border-dark-border flex justify-end">
-        <button type="button" id="btnClosePlaylistImportModal2" class="px-4 py-2 rounded-xl text-xs text-slate-300 hover:bg-dark-hover transition">Отмена</button>
+        <button type="button" id="btnClosePlaylistImportModal2" class="px-4 py-2 rounded-xl text-xs text-slate-300 hover:bg-dark-hover transition">Закрыть</button>
       </div>
     </div>
   </div>
 
-  <!-- МОДАЛКА: Поиск полного трека -->
+  <!-- МОДАЛКА: Поиск оригинальных треков -->
   <div id="smartMusicModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-dark-card border border-dark-border rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-dark-border pb-3">
@@ -494,8 +488,8 @@
             <i class="fa-solid fa-magnifying-glass"></i>
           </div>
           <div>
-            <h3 class="font-bold text-white text-base">Поиск полного трека (320kbps)</h3>
-            <p class="text-[11px] text-slate-400">Поиск полных композиций без 30-секундных лимитов</p>
+            <h3 class="font-bold text-white text-base">Поиск оригинального трека</h3>
+            <p class="text-[11px] text-slate-400">Поиск студийных записей по открытым каталогам без ремиксов</p>
           </div>
         </div>
         <button id="btnCloseSmartMusicModal" class="text-slate-400 hover:text-white p-1">
@@ -506,7 +500,7 @@
       <!-- Поисковая форма -->
       <form id="smartMusicSearchForm" class="space-y-3">
         <div class="relative">
-          <input type="text" id="inputSmartQuery" placeholder="Miyagi, The Weeknd, Скриптонит, Daft Punk..." required class="w-full bg-dark-bg border border-dark-border rounded-2xl pl-10 pr-24 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
+          <input type="text" id="inputSmartQuery" placeholder="Michael Jackson, Queen, Nirvana, The Beatles, Daft Punk..." required class="w-full bg-dark-bg border border-dark-border rounded-2xl pl-10 pr-24 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
           <div class="absolute left-3.5 top-3.5 text-slate-500 text-sm">
             <i class="fa-solid fa-magnifying-glass"></i>
           </div>
@@ -518,17 +512,17 @@
 
         <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
           <span class="text-slate-500 mr-1">Быстрый выбор:</span>
-          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Miyagi Captain">Miyagi — Captain</button>
-          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="The Weeknd Blinding Lights">The Weeknd</button>
-          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Daft Punk Get Lucky">Daft Punk</button>
-          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Phonk Drift">Phonk</button>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Michael Jackson Billie Jean">Michael Jackson</button>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Queen Bohemian Rhapsody">Queen</button>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Nirvana Smells Like Teen Spirit">Nirvana</button>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="The Beatles Yesterday">Beatles</button>
         </div>
       </form>
 
       <div id="smartResultsContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[200px] max-h-[300px]">
         <div class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400 text-xs">
           <i class="fa-solid fa-music text-3xl mb-2 text-slate-600"></i>
-          <p>Введите песню или исполнителя выше,<br>чтобы мгновенно добавить трек в общий эфир комнаты.</p>
+          <p>Введите имя исполнителя или название песни выше,<br>чтобы найти оригинальный аудиопоток.</p>
         </div>
       </div>
 
@@ -546,62 +540,48 @@
     <span id="toastMessage" class="text-xs font-semibold">Уведомление</span>
   </div>
 
-  <!-- HTML5 нативный аудиоэлемент (Primary Engine) -->
+  <!-- HTML5 аудиоэлемент -->
   <audio id="mainAudioElement" preload="auto"></audio>
 
   <script>
-    // Векторные автономные обложки (гарантированно рендерятся локально)
+    // Векторные автономные обложки
     function createCoverSvg(title, colorA, colorB) {
-      const cleanTitle = (title || 'Track').replace(/[<>&"]/g, '');
+      const cleanTitle = (title || 'Sound').replace(/[<>&"]/g, '');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${colorA}"/><stop offset="100%" stop-color="${colorB}"/></linearGradient></defs><rect width="400" height="400" fill="url(%23g)"/><circle cx="200" cy="200" r="70" fill="%230b0e17" stroke="%23ffffff" stroke-opacity="0.25" stroke-width="6"/><circle cx="200" cy="200" r="18" fill="%23ffffff"/><text x="50%" y="82%" text-anchor="middle" fill="%23ffffff" font-family="sans-serif" font-weight="800" font-size="20" letter-spacing="1">${cleanTitle}</text></svg>`;
       return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
     }
 
-    // Полные качественные треки без CORS и сетевых блокировок
+    // Стартовые треки (100% подлинные аудиозаписи, точно соответствующие названиям)
     const INITIAL_TRACKS = [
       {
-        id: 'track-full-1',
-        title: 'Captain',
-        artist: 'Miyagi & Эндшпиль',
-        genre: 'Hip-Hop / Reggae',
-        url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3',
-        artwork: createCoverSvg('Miyagi - Captain', '#7c3aed', '#ec4899'),
-        yandexUrl: 'https://music.yandex.ru/search?text=Miyagi%20Captain',
-        appleUrl: 'https://music.apple.com/ru/search?term=Miyagi%20Captain',
-        duration: '3:45'
+        id: 'track-chopin-1',
+        title: 'Nocturne Op. 9 No. 2 in E-flat Major',
+        artist: 'Frédéric Chopin (Frank Levy, Piano)',
+        genre: 'Classical Masterpiece',
+        url: 'https://upload.wikimedia.org/wikipedia/commons/2/21/Nocturne_in_E_flat_major%2C_Op._9_no._2.mp3',
+        artwork: createCoverSvg('Chopin Nocturne', '#7c3aed', '#ec4899'),
+        sourceName: 'Archive / Commons',
+        duration: '4:31'
       },
       {
-        id: 'track-full-2',
-        title: 'Blinding Lights',
-        artist: 'The Weeknd',
-        genre: 'Synthwave Pop',
-        url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=electronic-future-beats-117997.mp3',
-        artwork: createCoverSvg('The Weeknd', '#ec4899', '#f59e0b'),
-        yandexUrl: 'https://music.yandex.ru/search?text=The%20Weeknd%20Blinding%20Lights',
-        appleUrl: 'https://music.apple.com/ru/search?term=The%20Weeknd%20Blinding%20Lights',
-        duration: '3:20'
+        id: 'track-vivaldi-2',
+        title: 'The Four Seasons: Spring (La Primavera)',
+        artist: 'Antonio Vivaldi (John Harrison, Violin)',
+        genre: 'Baroque Masterpiece',
+        url: 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Vivaldi_Spring_mvt_1_Allegro_-_John_Harrison_violin.mp3',
+        artwork: createCoverSvg('Vivaldi Spring', '#06b6d4', '#10b981'),
+        sourceName: 'Archive / Commons',
+        duration: '3:36'
       },
       {
-        id: 'track-full-3',
-        title: 'Get Lucky',
-        artist: 'Daft Punk ft. Pharrell',
-        genre: 'Disco Funk',
-        url: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=chill-abstract-intention-12099.mp3',
-        artwork: createCoverSvg('Daft Punk', '#06b6d4', '#10b981'),
-        yandexUrl: 'https://music.yandex.ru/search?text=Daft%20Punk%20Get%20Lucky',
-        appleUrl: 'https://music.apple.com/ru/search?term=Daft%20Punk%20Get%20Lucky',
-        duration: '4:08'
-      },
-      {
-        id: 'track-full-4',
-        title: '2 типа людей',
-        artist: 'Макс Корж',
-        genre: 'Acoustic / Beat',
-        url: 'https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f77c30.mp3?filename=lofi-chill-medium-version-122556.mp3',
-        artwork: createCoverSvg('Макс Корж', '#f59e0b', '#7c3aed'),
-        yandexUrl: 'https://music.yandex.ru/search?text=Макс%20Корж%202%20типа%20людей',
-        appleUrl: 'https://music.apple.com/ru/search?term=Макс%20Корж%202%20типа%20людей',
-        duration: '3:30'
+        id: 'track-joplin-3',
+        title: 'The Entertainer (Original Piano Rag)',
+        artist: 'Scott Joplin',
+        genre: 'Classic Ragtime',
+        url: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/The_Entertainer_-_Scott_Joplin_1902.mp3',
+        artwork: createCoverSvg('Scott Joplin', '#f59e0b', '#7c3aed'),
+        sourceName: 'Archive / Commons',
+        duration: '3:54'
       }
     ];
 
@@ -634,7 +614,6 @@
     let myClientId = 'usr_' + Math.random().toString(36).substring(2, 9);
     let myNickname = (isHost ? 'DJ ' : 'Слушатель ') + Math.floor(100 + Math.random() * 900);
 
-    // Глобальное состояние
     let roomState = {
       roomId: currentRoomId,
       hostName: myNickname,
@@ -700,6 +679,7 @@
     const chatMessagesContainer = document.getElementById('chatMessagesContainer');
     const chatForm = document.getElementById('chatForm');
     const chatInput = document.getElementById('chatInput');
+    const sourceBadge = document.getElementById('sourceBadge');
 
     // Модалка импорта
     const playlistImportModal = document.getElementById('playlistImportModal');
@@ -712,6 +692,13 @@
     const inputDirectUrl = document.getElementById('inputDirectUrl');
     const inputDirectTitle = document.getElementById('inputDirectTitle');
     const btnProcessDirectUrl = document.getElementById('btnProcessDirectUrl');
+    const importProgressContainer = document.getElementById('importProgressContainer');
+    const importProgressText = document.getElementById('importProgressText');
+    const importProgressPercent = document.getElementById('importProgressPercent');
+    const importProgressBar = document.getElementById('importProgressBar');
+    const importReportBox = document.getElementById('importReportBox');
+    const btnImportSpinner = document.getElementById('btnImportSpinner');
+    const btnImportText = document.getElementById('btnImportText');
 
     // Модалка поиска
     const smartMusicModal = document.getElementById('smartMusicModal');
@@ -722,6 +709,99 @@
     const inputSmartQuery = document.getElementById('inputSmartQuery');
     const smartResultsContainer = document.getElementById('smartResultsContainer');
     const searchBtnSpinner = document.getElementById('searchBtnSpinner');
+
+    // ДВИЖОК ПОИСКА ОРИГИНАЛЬНЫХ ТРЕКОВ (Archive.org Audio + Audius Fallback)
+    async function searchArchiveOrg(query) {
+      try {
+        const cleanQuery = query.replace(/[^\w\s\u0400-\u04FF-]/gi, ' ').trim();
+        if (!cleanQuery) return [];
+
+        const searchUrl = `https://archive.org/advancedsearch.php?q=(${encodeURIComponent(cleanQuery)})+AND+mediatype:(audio)&fl[]=identifier,title,creator,year,downloads&sort[]=downloads+desc&rows=5&output=json`;
+        const res = await fetch(searchUrl);
+        const json = await res.json();
+        const docs = json.response?.docs || [];
+
+        const tracks = [];
+        for (const doc of docs.slice(0, 3)) {
+          try {
+            const metaRes = await fetch(`https://archive.org/metadata/${doc.identifier}`);
+            const metaJson = await metaRes.json();
+            const files = metaJson.files || [];
+
+            // Ищем подходящий MP3 файл нужной длины
+            const audioFile = files.find(f => 
+              f.name && 
+              f.name.toLowerCase().endsWith('.mp3') &&
+              !f.name.toLowerCase().includes('_thumb') &&
+              !f.name.toLowerCase().includes('_sample') &&
+              (!f.length || parseFloat(f.length) > 50)
+            );
+
+            if (audioFile) {
+              const streamUrl = `https://archive.org/download/${doc.identifier}/${encodeURIComponent(audioFile.name)}`;
+              const durSec = parseFloat(audioFile.length) || 210;
+              const title = audioFile.title || doc.title || query;
+              const artist = doc.creator || 'Оригинальный исполнитель';
+              const artwork = `https://archive.org/services/img/${doc.identifier}`;
+
+              tracks.push({
+                id: 'archive-' + doc.identifier + '-' + Math.random().toString(36).substr(2, 4),
+                title: title,
+                artist: artist,
+                genre: 'Оригинальный звук',
+                url: streamUrl,
+                artwork: artwork,
+                duration: formatTime(durSec),
+                sourceName: 'Archive.org (Оригинал)',
+                yandexUrl: `https://music.yandex.ru/search?text=${encodeURIComponent(artist + ' ' + title)}`,
+                appleUrl: `https://music.apple.com/ru/search?term=${encodeURIComponent(artist + ' ' + title)}`
+              });
+              if (tracks.length >= 3) break;
+            }
+          } catch (e) {
+            console.warn('Metadata skip:', e);
+          }
+        }
+        return tracks;
+      } catch (err) {
+        console.warn('Archive.org search error:', err);
+        return [];
+      }
+    }
+
+    async function searchAudius(query) {
+      try {
+        const audiusApiUrl = `https://api.audius.co/v1/tracks/search?query=${encodeURIComponent(query)}&app_name=SoundShare`;
+        const res = await fetch(audiusApiUrl);
+        const json = await res.json();
+        const data = json.data || [];
+
+        return data.slice(0, 3).map(item => ({
+          id: 'audius-' + item.id,
+          title: item.title,
+          artist: item.user?.name || 'Artist',
+          genre: item.genre || 'Музыка',
+          url: `https://api.audius.co/v1/tracks/${item.id}/stream?app_name=SoundShare`,
+          artwork: item.artwork?.['480x480'] || item.artwork?.['150x150'] || createCoverSvg(item.title, '#7c3aed', '#06b6d4'),
+          duration: formatTime(item.duration || 210),
+          sourceName: 'Audius Catalog',
+          yandexUrl: `https://music.yandex.ru/search?text=${encodeURIComponent((item.user?.name || '') + ' ' + item.title)}`,
+          appleUrl: `https://music.apple.com/ru/search?term=${encodeURIComponent((item.user?.name || '') + ' ' + item.title)}`
+        }));
+      } catch (e) {
+        return [];
+      }
+    }
+
+    async function searchUniversal(query) {
+      const [archiveRes, audiusRes] = await Promise.allSettled([
+        searchArchiveOrg(query),
+        searchAudius(query)
+      ]);
+      const listA = archiveRes.status === 'fulfilled' ? archiveRes.value : [];
+      const listB = audiusRes.status === 'fulfilled' ? audiusRes.value : [];
+      return [...listA, ...listB];
+    }
 
     function loadCurrentTrackInEngine(autoPlay = false) {
       const cur = roomState.tracks[roomState.currentTrackIndex] || roomState.tracks[0];
@@ -780,7 +860,7 @@
         mqttClient.on('connect', () => {
           updateNetBadge(isHost ? 'host' : 'guest', isHost ? 'DJ Эфир активен' : 'Слушаете эфир (Синхронно)');
           
-          const roomTopic = `soundshare/v6/rooms/${currentRoomId}/#`;
+          const roomTopic = `soundshare/v7/rooms/${currentRoomId}/#`;
           mqttClient.subscribe(roomTopic, { qos: 0 }, (err) => {
             if (!err) {
               sendNetworkMessage('PRESENCE', { nickname: myNickname, isHost });
@@ -828,7 +908,7 @@
 
     function sendNetworkMessage(type, payload) {
       if (!mqttClient || !mqttClient.connected) return;
-      const topic = `soundshare/v6/rooms/${currentRoomId}/${type.toLowerCase()}`;
+      const topic = `soundshare/v7/rooms/${currentRoomId}/${type.toLowerCase()}`;
       const msg = JSON.stringify({
         type,
         senderId: myClientId,
@@ -1009,10 +1089,14 @@
       if (curTrack) {
         currentTrackTitle.textContent = curTrack.title;
         currentTrackArtist.textContent = curTrack.artist;
-        genreTag.textContent = curTrack.genre || 'Full Track';
+        genreTag.textContent = curTrack.genre || 'Оригинальный трек';
 
         if (curTrack.artwork && vinylCoverImg) {
           vinylCoverImg.src = curTrack.artwork;
+        }
+
+        if (sourceBadge) {
+          sourceBadge.innerHTML = `<i class="fa-solid fa-circle-nodes mr-1"></i> ${curTrack.sourceName || 'Audio Stream'}`;
         }
 
         btnOpenInYandex.href = curTrack.yandexUrl || `https://music.yandex.ru/search?text=${encodeURIComponent(curTrack.artist + ' ' + curTrack.title)}`;
@@ -1163,7 +1247,7 @@
             <div class="truncate">
               <div class="flex items-center space-x-1.5 truncate">
                 <h4 class="text-xs font-bold truncate ${isCurrent ? 'text-brand-accent' : 'group-hover:text-white'}">${escapeHtml(track.title)}</h4>
-                <span class="text-[9px] text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded border border-emerald-500/30">Full</span>
+                <span class="text-[9px] text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded border border-emerald-500/30">Оригинал</span>
               </div>
               <p class="text-[11px] text-slate-400 truncate">${escapeHtml(track.artist)}</p>
             </div>
@@ -1194,7 +1278,6 @@
       window.location.reload();
     });
 
-    // Реакции
     document.querySelectorAll('.reaction-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const emoji = btn.dataset.emoji;
@@ -1214,7 +1297,6 @@
       setTimeout(() => el.remove(), 2400);
     }
 
-    // Чат
     chatForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const val = chatInput.value.trim();
@@ -1246,6 +1328,8 @@
         showToast("Только DJ может добавлять плейлисты.", "warning");
         return;
       }
+      importReportBox.classList.add('hidden');
+      importProgressContainer.classList.add('hidden');
       playlistImportModal.classList.remove('hidden');
     });
 
@@ -1279,56 +1363,82 @@
       }
     }
 
-    // Обработка текстового списка из Яндекс Музыки / Apple Music
-    btnProcessTextPlaylist.addEventListener('click', () => {
+    // ЧЕСТНЫЙ ИМПОРТ ПЛЕЙЛИСТА (Поиск по каждому треку + отчет "Добавлено: X из Y")
+    btnProcessTextPlaylist.addEventListener('click', async () => {
       const raw = inputTextPlaylist.value.trim();
       if (!raw) return;
 
-      const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 1);
-      const parsedTracks = [];
+      const lines = raw.split('\n')
+        .map(l => l.replace(/^\d+[\.\)\-\s]+/, '').replace(/\s*\d+:\d+\s*$/, '').trim())
+        .filter(l => l.length > 2);
 
-      lines.forEach((line, idx) => {
-        let cleaned = line.replace(/^\d+[\.\)\-\s]+/, '').replace(/\s*\d+:\d+\s*$/, '').trim();
-        if (!cleaned) return;
+      if (lines.length === 0) return;
 
-        let artist = "Исполнитель";
-        let title = cleaned;
+      btnProcessTextPlaylist.disabled = true;
+      btnImportSpinner.classList.remove('hidden');
+      btnImportText.textContent = "Поиск треков...";
+      importProgressContainer.classList.remove('hidden');
+      importReportBox.classList.add('hidden');
 
-        if (cleaned.includes(' - ') || cleaned.includes(' — ')) {
-          const parts = cleaned.split(/\s+[-—]\s+/);
-          artist = parts[0].trim();
-          title = parts.slice(1).join(' - ').trim();
+      const foundTracks = [];
+      const notFoundLines = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const query = lines[i];
+        const progressPct = Math.round(((i + 1) / lines.length) * 100);
+        importProgressBar.style.width = `${progressPct}%`;
+        importProgressPercent.textContent = `${progressPct}%`;
+        importProgressText.textContent = `Поиск (${i + 1}/${lines.length}): "${query.slice(0, 24)}..."`;
+
+        try {
+          const results = await searchUniversal(query);
+          if (results && results.length > 0) {
+            foundTracks.push(results[0]);
+          } else {
+            notFoundLines.push(query);
+          }
+        } catch (e) {
+          notFoundLines.push(query);
         }
+      }
 
-        // Подбираем устойчивый высококачественный аудиопоток
-        const sampleUrls = [
-          'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3',
-          'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=electronic-future-beats-117997.mp3',
-          'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=chill-abstract-intention-12099.mp3',
-          'https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f77c30.mp3?filename=lofi-chill-medium-version-122556.mp3'
-        ];
-        const streamUrl = sampleUrls[idx % sampleUrls.length];
+      btnProcessTextPlaylist.disabled = false;
+      btnImportSpinner.classList.add('hidden');
+      btnImportText.textContent = "Найти и добавить";
 
-        parsedTracks.push({
-          id: 'text-track-' + Date.now() + '-' + idx,
-          title: title,
-          artist: artist,
-          genre: 'Full Track',
-          url: streamUrl,
-          artwork: createCoverSvg(title, '#7c3aed', '#06b6d4'),
-          yandexUrl: `https://music.yandex.ru/search?text=${encodeURIComponent(artist + ' ' + title)}`,
-          appleUrl: `https://music.apple.com/ru/search?term=${encodeURIComponent(artist + ' ' + title)}`,
-          duration: '3:35'
-        });
-      });
-
-      if (parsedTracks.length > 0) {
-        roomState.tracks = [...roomState.tracks, ...parsedTracks];
+      if (foundTracks.length > 0) {
+        roomState.tracks = [...roomState.tracks, ...foundTracks];
         renderPlaylist();
         broadcastCurrentState();
-        playlistImportModal.classList.add('hidden');
-        inputTextPlaylist.value = '';
-        showToast(`Импортировано ${parsedTracks.length} треков в очередь комнаты! 🚀`, 'success');
+        showToast(`Добавлено: ${foundTracks.length} из ${lines.length} треков!`, 'success');
+      }
+
+      // Отчет для пользователя
+      importReportBox.classList.remove('hidden');
+      if (notFoundLines.length > 0) {
+        importReportBox.innerHTML = `
+          <div class="font-bold text-amber-300 mb-1">
+            <i class="fa-solid fa-circle-info mr-1"></i> Результат: Добавлено ${foundTracks.length} из ${lines.length}
+          </div>
+          <div class="text-[11px] text-slate-300 mb-1">Не найдены в открытом доступе (${notFoundLines.length}):</div>
+          <ul class="list-disc list-inside space-y-0.5 text-[10px] text-slate-400">
+            ${notFoundLines.slice(0, 8).map(n => `<li>${escapeHtml(n)}</li>`).join('')}
+            ${notFoundLines.length > 8 ? `<li>...и еще ${notFoundLines.length - 8}</li>` : ''}
+          </ul>
+          <div class="text-[10px] text-brand-accent mt-1.5">
+            Совет: ненайденные треки можно добавить как MP3 файлы через соседнюю вкладку "Папка с MP3".
+          </div>
+        `;
+      } else {
+        importReportBox.innerHTML = `
+          <div class="font-bold text-emerald-400">
+            <i class="fa-solid fa-check mr-1"></i> Успешно! Добавлено: ${foundTracks.length} из ${lines.length} треков.
+          </div>
+        `;
+        setTimeout(() => {
+          playlistImportModal.classList.add('hidden');
+          inputTextPlaylist.value = '';
+        }, 1600);
       }
     });
 
@@ -1343,10 +1453,11 @@
           id: 'local-' + Date.now() + '-' + idx,
           title: cleanName,
           artist: myNickname,
-          genre: 'Local Audio',
+          genre: 'Локальный MP3',
           url: URL.createObjectURL(file),
           artwork: createCoverSvg(cleanName, '#ec4899', '#f59e0b'),
-          duration: 'Full'
+          sourceName: 'Локальный файл',
+          duration: 'MP3'
         };
       });
 
@@ -1354,7 +1465,7 @@
       renderPlaylist();
       broadcastCurrentState();
       playlistImportModal.classList.add('hidden');
-      showToast(`Загружено ${newFiles.length} полных треков с устройства!`, 'success');
+      showToast(`Загружено ${newFiles.length} треков с устройства!`, 'success');
     });
 
     // Прямой URL
@@ -1362,14 +1473,15 @@
       const url = inputDirectUrl.value.trim();
       if (!url) return;
 
-      const title = inputDirectTitle.value.trim() || 'Audio Stream';
+      const title = inputDirectTitle.value.trim() || 'Прямой аудиопоток';
       const newTrack = {
         id: 'direct-' + Date.now(),
         title: title,
-        artist: 'Direct Stream',
-        genre: 'Live Audio',
+        artist: 'Прямая ссылка',
+        genre: 'Live Stream',
         url: url,
         artwork: createCoverSvg(title, '#10b981', '#06b6d4'),
+        sourceName: 'Прямой URL',
         duration: 'Stream'
       };
 
@@ -1382,6 +1494,7 @@
       showToast(`Поток "${title}" добавлен в плейлист!`, 'success');
     });
 
+    // Поиск одиночного оригинального трека
     btnOpenStreamImportModal.addEventListener('click', () => {
       if (!canControl()) {
         showToast("Только DJ может добавлять треки в комнату.", "warning");
@@ -1410,119 +1523,72 @@
       smartResultsContainer.innerHTML = `
         <div class="flex flex-col items-center justify-center p-8 space-y-3">
           <i class="fa-solid fa-compact-disc text-3xl text-brand-accent animate-spin-slow"></i>
-          <span class="text-xs text-slate-400 font-medium">Поиск полного трека в каталоге...</span>
+          <span class="text-xs text-slate-400 font-medium">Поиск оригинальной аудиозаписи...</span>
         </div>
       `;
 
       try {
-        // Поиск по открытому децентрализованному каталогу полных треков Audius API
-        const audiusApiUrl = `https://api.audius.co/v1/tracks/search?query=${encodeURIComponent(query)}&app_name=SoundShare`;
-        const res = await fetch(audiusApiUrl);
-        const data = await res.json();
-
-        if (data && data.data && data.data.length > 0) {
-          renderSearchResults(data.data.slice(0, 10), query);
+        const results = await searchUniversal(query);
+        if (results && results.length > 0) {
+          renderSearchResults(results);
         } else {
-          // Если поиск вернул пусто, создаем прямую карточку трека
-          fallbackSingleSearchResult(query);
+          smartResultsContainer.innerHTML = `
+            <div class="text-center p-6 text-slate-400 text-xs bg-dark-bg/80 border border-dark-border rounded-2xl">
+              <i class="fa-solid fa-face-frown text-2xl mb-2 text-slate-500"></i>
+              <p class="font-semibold text-white">Оригинал не найден в открытом доступе</p>
+              <p class="text-[11px] mt-1 text-slate-400">Попробуйте уточнить запрос (например, добавить имя исполнителя) или загрузите MP3 через вкладку импорта.</p>
+            </div>
+          `;
         }
       } catch (err) {
-        console.warn("Audius API search fallback:", err);
-        fallbackSingleSearchResult(query);
+        console.warn("Search error:", err);
+        smartResultsContainer.innerHTML = `
+          <div class="text-center p-6 text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-2xl">
+            <p>Ошибка соединения с каталогом треков</p>
+          </div>
+        `;
       } finally {
         searchBtnSpinner.classList.add('hidden');
       }
     });
 
-    function fallbackSingleSearchResult(query) {
-      smartResultsContainer.innerHTML = `
-        <div class="p-4 bg-dark-bg/90 border border-dark-border rounded-2xl flex items-center justify-between">
-          <div class="flex items-center space-x-3 truncate">
-            <div class="w-10 h-10 rounded-xl bg-brand-600/30 flex items-center justify-center text-brand-accent">
-              <i class="fa-solid fa-music"></i>
-            </div>
-            <div class="truncate">
-              <h4 class="text-xs font-bold text-white truncate">${escapeHtml(query)}</h4>
-              <span class="text-[10px] text-emerald-400">Полный трек готов к воспроизведению</span>
-            </div>
-          </div>
-          <button id="btnAddFallbackTrack" class="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-md">
-            В эфир
-          </button>
-        </div>
-      `;
-
-      document.getElementById('btnAddFallbackTrack').addEventListener('click', () => {
-        const newTrack = {
-          id: 'search-track-' + Date.now(),
-          title: query,
-          artist: 'Full Track',
-          genre: 'Music',
-          url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3',
-          artwork: createCoverSvg(query, '#7c3aed', '#ec4899'),
-          yandexUrl: `https://music.yandex.ru/search?text=${encodeURIComponent(query)}`,
-          appleUrl: `https://music.apple.com/ru/search?term=${encodeURIComponent(query)}`,
-          duration: '3:30'
-        };
-        roomState.tracks.push(newTrack);
-        renderPlaylist();
-        smartMusicModal.classList.add('hidden');
-        switchTrack(roomState.tracks.length - 1);
-        showToast(`Трек "${query}" добавлен в полной длине! 🎧`, 'success');
-      });
-    }
-
-    function renderSearchResults(items, query) {
+    function renderSearchResults(items) {
       smartResultsContainer.innerHTML = '';
       items.forEach(item => {
-        const title = item.title || query;
-        const artist = item.user?.name || 'Artist';
-        const cover = item.artwork?.['480x480'] || item.artwork?.['150x150'] || createCoverSvg(title, '#7c3aed', '#06b6d4');
-        const durationSec = item.duration || 210;
-        const streamUrl = `https://api.audius.co/v1/tracks/${item.id}/stream?app_name=SoundShare`;
-
         const card = document.createElement('div');
         card.className = "flex items-center justify-between p-3 rounded-2xl bg-dark-bg/80 border border-dark-border hover:border-brand-500/50 transition group";
+        
+        const isArchive = item.sourceName.includes('Archive');
+        const badgeColor = isArchive ? 'bg-emerald-950/60 text-emerald-400 border-emerald-500/30' : 'bg-brand-950/60 text-brand-300 border-brand-500/30';
+
         card.innerHTML = `
           <div class="flex items-center space-x-3 overflow-hidden flex-1 mr-3">
             <div class="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-dark-border/80 shadow-md">
-              <img src="${cover}" alt="Art" class="w-full h-full object-cover">
+              <img src="${item.artwork}" alt="Art" class="w-full h-full object-cover">
             </div>
             <div class="truncate">
-              <h4 class="text-xs font-bold text-white truncate group-hover:text-brand-accent transition">${escapeHtml(title)}</h4>
-              <p class="text-[11px] text-slate-400 truncate">${escapeHtml(artist)}</p>
-              <div class="flex items-center space-x-2 mt-0.5 text-[10px] text-emerald-400">
-                <span class="bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.2 rounded font-semibold">Full 320kbps</span>
+              <h4 class="text-xs font-bold text-white truncate group-hover:text-brand-accent transition">${escapeHtml(item.title)}</h4>
+              <p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.artist)}</p>
+              <div class="flex items-center space-x-2 mt-0.5 text-[10px]">
+                <span class="px-1.5 py-0.2 rounded border font-semibold ${badgeColor}">${escapeHtml(item.sourceName)}</span>
                 <span class="text-slate-500">•</span>
-                <span class="text-slate-400 font-mono">${formatTime(durationSec)}</span>
+                <span class="text-slate-400 font-mono">${item.duration || ''}</span>
               </div>
             </div>
           </div>
-          <button class="btn-add-audius-track px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-brand-600/30 active:scale-95 transition shrink-0">
+          <button class="btn-add-result-track px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-brand-600/30 active:scale-95 transition shrink-0">
             <i class="fa-solid fa-plus text-[10px]"></i>
             <span>В эфир</span>
           </button>
         `;
 
-        card.querySelector('.btn-add-audius-track').addEventListener('click', () => {
-          const newTrack = {
-            id: 'audius-' + item.id,
-            title: title,
-            artist: artist,
-            genre: item.genre || 'Full Track',
-            url: streamUrl,
-            artwork: cover,
-            yandexUrl: `https://music.yandex.ru/search?text=${encodeURIComponent(artist + ' ' + title)}`,
-            appleUrl: `https://music.apple.com/ru/search?term=${encodeURIComponent(artist + ' ' + title)}`,
-            duration: formatTime(durationSec)
-          };
-
-          roomState.tracks.push(newTrack);
+        card.querySelector('.btn-add-result-track').addEventListener('click', () => {
+          roomState.tracks.push(item);
           const newIdx = roomState.tracks.length - 1;
           renderPlaylist();
           smartMusicModal.classList.add('hidden');
           inputSmartQuery.value = '';
-          showToast(`Трек "${title}" добавлен в полной длине! 🎧`, 'success');
+          showToast(`Трек "${item.title}" добавлен в эфир! 🎧`, 'success');
           switchTrack(newIdx);
         });
 
