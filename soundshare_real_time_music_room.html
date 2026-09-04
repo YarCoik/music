@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoundShare — Совместное прослушивание музыки</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- PeerJS for 100% Free, Zero-Config Real-Time WebRTC Data Sync -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              accent: '#06b6d4',
+              neon: '#ec4899',
+            },
+            dark: {
+              bg: '#090b10',
+              card: '#121624',
+              hover: '#1a2035',
+              border: '#232b45',
+            }
+          },
+          animation: {
+            'spin-slow': 'spin 18s linear infinite',
+            'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+            'float-up': 'floatUp 2.5s ease-out forwards',
+          },
+          keyframes: {
+            pulseGlow: {
+              '0%, 100%': { boxShadow: '0 0 15px rgba(139, 92, 246, 0.4)' },
+              '50%': { boxShadow: '0 0 35px rgba(6, 182, 212, 0.7)' },
+            },
+            floatUp: {
+              '0%': { transform: 'translateY(0) scale(0.7)', opacity: '1' },
+              '100%': { transform: 'translateY(-140px) scale(1.4)', opacity: '0' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d111d;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2b3553;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #7c3aed;
+    }
+
+    /* Range slider custom styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 14px;
+      width: 14px;
+      border-radius: 50%;
+      background: #06b6d4;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.8);
+      margin-top: -4px;
+      transition: transform 0.1s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      background: #1f273d;
+      border-radius: 9999px;
+    }
+
+    .vinyl-grooves {
+      background: radial-gradient(circle, #0f121d 28%, #1f2438 30%, #0f121d 34%, #1f2438 42%, #0f121d 46%, #1f2438 58%, #0f121d 63%, #1e2538 78%, #0b0e17 84%);
+    }
+
+    .paused-spin {
+      animation-play-state: paused !important;
+    }
+  </style>
+</head>
+
+<body class="bg-dark-bg text-slate-100 min-h-screen font-sans flex flex-col antialiased selection:bg-brand-500 selection:text-white relative overflow-x-hidden">
+
+  <header class="border-b border-dark-border/80 bg-dark-card/80 backdrop-blur-xl sticky top-0 z-40 px-4 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <!-- Brand Logo -->
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-brand-accent flex items-center justify-center shadow-lg shadow-brand-600/30">
+        <i class="fa-solid fa-compact-disc text-white text-xl animate-spin-slow"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-black text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-accent bg-clip-text text-transparent">SoundShare</span>
+          <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-brand-500/20 text-brand-accent border border-brand-accent/30 rounded-full">Sync Live</span>
+        </div>
+        <p class="text-xs text-slate-400 hidden sm:block">Слушай музыку синхронно с друзьями</p>
+      </div>
+    </div>
+
+    <!-- Room Info & Controls -->
+    <div class="flex items-center flex-wrap gap-2.5">
+      <!-- Room ID Badge -->
+      <div class="flex items-center bg-dark-bg/80 border border-dark-border rounded-xl px-3 py-1.5 text-xs">
+        <span class="text-slate-400 mr-1.5"><i class="fa-solid fa-door-open text-brand-500 mr-1"></i>Комната:</span>
+        <span id="currentRoomDisplay" class="font-mono font-bold text-brand-accent">party-chill</span>
+      </div>
+
+      <!-- P2P Network Status Badge -->
+      <div id="p2pStatusBadge" class="flex items-center bg-dark-bg/80 border border-dark-border rounded-xl px-3 py-1.5 text-xs text-amber-400">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse mr-2"></span>
+        <span id="p2pStatusText">Подключение к P2P...</span>
+      </div>
+
+      <!-- Listeners Count -->
+      <div class="flex items-center bg-dark-bg/80 border border-dark-border rounded-xl px-3 py-1.5 text-xs text-emerald-400">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-2"></span>
+        <span id="listenerCountText">1 онлайн</span>
+      </div>
+
+      <!-- Share Room Button -->
+      <button id="btnShareRoom" class="flex items-center space-x-2 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white font-medium text-xs sm:text-sm px-3.5 py-2 rounded-xl transition shadow-md shadow-brand-600/25 active:scale-95">
+        <i class="fa-solid fa-share-nodes"></i>
+        <span>Поделиться ссылкой</span>
+      </button>
+
+      <!-- Change Room / New Room Modal trigger -->
+      <button id="btnChangeRoom" class="bg-dark-hover hover:bg-slate-800 text-slate-300 hover:text-white px-3 py-2 rounded-xl text-xs sm:text-sm border border-dark-border transition">
+        <i class="fa-solid fa-arrow-right-arrow-left mr-1"></i> Сменить
+      </button>
+    </div>
+  </header>
+
+  <!-- Autoplay unlock alert (for browsers requiring interaction) -->
+  <div id="audioUnlockBanner" class="hidden bg-gradient-to-r from-amber-600/90 to-rose-600/90 text-white px-4 py-2.5 text-center text-sm font-medium z-50 flex items-center justify-center space-x-3 shadow-lg cursor-pointer">
+    <i class="fa-solid fa-volume-xmark text-lg animate-bounce"></i>
+    <span>Браузер заблокировал автовоспроизведение звука. <strong>Нажмите сюда</strong>, чтобы включить трансляцию!</span>
+    <button class="bg-white text-slate-900 text-xs font-bold px-3 py-1 rounded-lg ml-2">Включить звук</button>
+  </div>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- LEFT & CENTER: The Player Stage (7 cols on desktop) -->
+    <section class="lg:col-span-7 flex flex-col space-y-6">
+      
+      <!-- Visualizer & Vinyl Deck Card -->
+      <div class="bg-dark-card border border-dark-border rounded-3xl p-6 relative overflow-hidden shadow-2xl">
+        <!-- Ambient lighting glow -->
+        <div class="absolute -top-24 -right-24 w-72 h-72 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-brand-accent/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- DJ status bar -->
+        <div class="flex items-center justify-between mb-6 relative z-10">
+          <div class="flex items-center space-x-2">
+            <span id="djBadge" class="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-lg bg-brand-500/20 text-brand-300 border border-brand-500/30">
+              <i class="fa-solid fa-crown text-amber-400 mr-1.5"></i> <span id="djNameDisplay">DJ: Вы</span>
+            </span>
+            <span id="syncStateBadge" class="inline-flex items-center text-xs font-medium px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+              <i class="fa-solid fa-tower-broadcast mr-1 animate-pulse"></i> В эфире
+            </span>
+          </div>
+
+          <!-- DJ Control Lock Toggle -->
+          <div class="flex items-center space-x-2 text-xs">
+            <button id="btnTogglePartyMode" class="text-slate-400 hover:text-white bg-dark-bg/80 border border-dark-border px-2.5 py-1 rounded-lg transition" title="В Party Mode любой может переключать треки и ставить паузу">
+              <i class="fa-solid fa-users mr-1"></i> <span id="partyModeLabel">DJ Режим (только хост)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Turntable / Vinyl Record Visualizer -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-8 my-4 relative z-10">
+          <!-- Vinyl Disc -->
+          <div class="relative group">
+            <div id="vinylDisc" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full vinyl-grooves shadow-2xl border-4 border-slate-900 flex items-center justify-center animate-spin-slow paused-spin transition-transform duration-500">
+              <!-- Disc Center Label -->
+              <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-brand-600 via-brand-neon to-brand-accent p-1 shadow-inner flex items-center justify-center">
+                <div class="w-full h-full rounded-full bg-dark-bg flex items-center justify-center border-2 border-white/20">
+                  <div class="w-5 h-5 rounded-full bg-slate-200 border-4 border-dark-bg"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Glow ring on play -->
+            <div id="vinylGlow" class="absolute inset-0 rounded-full border border-brand-accent/40 pointer-events-none opacity-0 transition-opacity duration-300"></div>
+          </div>
+
+          <!-- Track Info & Visualizer Canvas -->
+          <div class="flex-1 text-center sm:text-left w-full">
+            <span id="genreTag" class="text-[11px] font-bold uppercase tracking-wider text-brand-accent bg-brand-accent/10 px-2.5 py-0.5 rounded-full inline-block mb-2">Synthwave / Chill</span>
+            <h2 id="currentTrackTitle" class="text-xl sm:text-2xl font-extrabold text-white truncate max-w-sm mb-1">Night City Drive</h2>
+            <p id="currentTrackArtist" class="text-sm font-medium text-slate-400 mb-4">SoundHelix Beats</p>
+
+            <!-- Audio Wave Canvas Visualizer -->
+            <div class="w-full h-14 bg-dark-bg/90 rounded-xl border border-dark-border/80 p-2 overflow-hidden flex items-center">
+              <canvas id="visualizerCanvas" class="w-full h-full block"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline Progress -->
+        <div class="mt-6 space-y-1.5 relative z-10">
+          <div class="flex items-center justify-between text-xs font-mono text-slate-400">
+            <span id="currentTimeDisplay">0:00</span>
+            <div class="flex items-center space-x-1.5 text-[11px] text-slate-500">
+              <i class="fa-solid fa-arrows-rotate text-brand-accent text-[9px]"></i>
+              <span>Синхронизировано</span>
+            </div>
+            <span id="durationDisplay">0:00</span>
+          </div>
+
+          <div class="relative w-full">
+            <input type="range" id="seekSlider" min="0" max="100" value="0" step="0.1" class="w-full h-2 rounded-lg cursor-pointer">
+          </div>
+        </div>
+
+        <!-- Player Controls Bar -->
+        <div class="mt-6 pt-4 border-t border-dark-border/60 flex flex-wrap items-center justify-between gap-4 relative z-10">
+          
+          <!-- Prev / Play / Next / Stop buttons -->
+          <div class="flex items-center space-x-3 mx-auto sm:mx-0">
+            <!-- Prev Track -->
+            <button id="btnPrevTrack" class="w-10 h-10 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border flex items-center justify-center text-slate-300 hover:text-white transition active:scale-95" title="Предыдущий трек">
+              <i class="fa-solid fa-backward-step"></i>
+            </button>
+
+            <!-- Rewind 10s -->
+            <button id="btnRewind10" class="w-9 h-9 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border flex items-center justify-center text-slate-400 hover:text-white transition active:scale-95 text-xs" title="Назад на 10 сек">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+
+            <!-- Main Play/Pause Button -->
+            <button id="btnPlayPause" class="w-14 h-14 rounded-2xl bg-gradient-to-r from-brand-600 via-brand-500 to-brand-accent text-white flex items-center justify-center shadow-lg shadow-brand-600/40 hover:scale-105 active:scale-95 transition">
+              <i id="playPauseIcon" class="fa-solid fa-play text-xl ml-0.5"></i>
+            </button>
+
+            <!-- Forward 10s -->
+            <button id="btnForward10" class="w-9 h-9 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border flex items-center justify-center text-slate-400 hover:text-white transition active:scale-95 text-xs" title="Вперед на 10 сек">
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
+
+            <!-- Next Track -->
+            <button id="btnNextTrack" class="w-10 h-10 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border flex items-center justify-center text-slate-300 hover:text-white transition active:scale-95" title="Следующий трек">
+              <i class="fa-solid fa-forward-step"></i>
+            </button>
+          </div>
+
+          <!-- Volume and Audio Controls -->
+          <div class="flex items-center space-x-3 mx-auto sm:mx-0">
+            <button id="btnMute" class="text-slate-400 hover:text-white transition text-sm">
+              <i id="volumeIcon" class="fa-solid fa-volume-high"></i>
+            </button>
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.85" class="w-24 h-1.5 rounded-lg cursor-pointer">
+            
+            <!-- Claim DJ Button (if someone else is DJ) -->
+            <button id="btnClaimDJ" class="hidden text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2.5 py-1.5 rounded-xl transition">
+              <i class="fa-solid fa-hand mr-1"></i> Стать DJ
+            </button>
+          </div>
+        </div>
+
+        <!-- Floating Reactions Trigger Bar -->
+        <div class="mt-6 pt-4 border-t border-dark-border/40 flex items-center justify-between flex-wrap gap-2">
+          <span class="text-xs text-slate-400 font-medium">Кинуть реакцию в эфир:</span>
+          <div class="flex items-center space-x-2" id="reactionButtonsContainer">
+            <button data-emoji="🔥" class="reaction-btn px-2.5 py-1 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border text-lg hover:scale-125 transition active:scale-95">🔥</button>
+            <button data-emoji="💃" class="reaction-btn px-2.5 py-1 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border text-lg hover:scale-125 transition active:scale-95">💃</button>
+            <button data-emoji="🎧" class="reaction-btn px-2.5 py-1 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border text-lg hover:scale-125 transition active:scale-95">🎧</button>
+            <button data-emoji="🚀" class="reaction-btn px-2.5 py-1 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border text-lg hover:scale-125 transition active:scale-95">🚀</button>
+            <button data-emoji="❤️" class="reaction-btn px-2.5 py-1 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border text-lg hover:scale-125 transition active:scale-95">❤️</button>
+            <button data-emoji="🍸" class="reaction-btn px-2.5 py-1 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border text-lg hover:scale-125 transition active:scale-95">🍸</button>
+          </div>
+        </div>
+
+        <!-- Container for floating animated emojis -->
+        <div id="floatingEmojiContainer" class="pointer-events-none absolute inset-0 overflow-hidden z-30"></div>
+      </div>
+
+      <!-- Instructions & How It Works -->
+      <div class="bg-dark-card/60 border border-dark-border rounded-2xl p-4 text-xs text-slate-400 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 text-brand-accent flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-lightbulb"></i>
+        </div>
+        <div>
+          <span class="text-white font-medium">Как работает синхронизация:</span>
+          Отправь ссылку друзьям. При любом твоем действии (плей, пауза, перемотка в любую секунду или смена песни) у всех участников трек встает на ту же позицию в реальном времени!
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Playlist & Room Chat (5 cols on desktop) -->
+    <section class="lg:col-span-5 flex flex-col space-y-6">
+      
+      <!-- Playlist Card -->
+      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[340px]">
+        <div class="flex items-center justify-between pb-3 border-b border-dark-border">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-list-music text-brand-accent"></i>
+            <h3 class="font-bold text-white text-sm">Плейлист комнаты</h3>
+            <span id="tracksBadgeCount" class="text-xs bg-dark-bg text-slate-400 px-2 py-0.5 rounded-md border border-dark-border">4 трека</span>
+          </div>
+          <!-- Add custom audio button -->
+          <button id="btnOpenAddTrackModal" class="text-xs text-brand-accent hover:text-white bg-brand-500/10 hover:bg-brand-500/20 border border-brand-accent/20 px-2.5 py-1 rounded-lg transition flex items-center space-x-1">
+            <i class="fa-solid fa-plus text-[10px]"></i>
+            <span>Добавить трек</span>
+          </button>
+        </div>
+
+        <!-- Tracks List Container -->
+        <div id="playlistContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 mt-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Live Room Chat & Reactions Card -->
+      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[350px]">
+        <div class="flex items-center justify-between pb-3 border-b border-dark-border">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-comments text-brand-500"></i>
+            <h3 class="font-bold text-white text-sm">Чат комнаты</h3>
+          </div>
+          <span class="text-[11px] text-slate-400">Живое общение</span>
+        </div>
+
+        <!-- Messages stream -->
+        <div id="chatMessagesContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 mt-3 text-xs">
+          <!-- Messages inserted dynamically -->
+        </div>
+
+        <!-- Message input form -->
+        <form id="chatForm" class="mt-3 pt-2 border-t border-dark-border/60 flex items-center gap-2">
+          <input type="text" id="chatInput" placeholder="Написать в комнату..." maxlength="120" autocomplete="off" class="flex-1 bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition">
+          <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition active:scale-95">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: Add Custom Track -->
+  <div id="addTrackModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-dark-card border border-dark-border rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-white text-lg flex items-center space-x-2">
+          <i class="fa-solid fa-music text-brand-accent"></i>
+          <span>Добавить свой трек</span>
+        </h3>
+        <button id="btnCloseAddTrackModal" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-400">Введите прямую ссылку на аудиофайл (mp3, ogg, wav) для воспроизведения в комнате.</p>
+
+      <form id="formAddTrack" class="space-y-3">
+        <!-- Local File Upload Option -->
+        <div class="p-3 bg-brand-500/10 border border-brand-500/30 rounded-2xl">
+          <label class="block text-xs font-semibold text-brand-accent mb-1.5">
+            <i class="fa-solid fa-folder-open mr-1"></i> Быстро выбрать аудиофайл с устройства:
+          </label>
+          <input type="file" id="inputLocalAudioFile" accept="audio/*" class="w-full text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-600 file:text-white hover:file:bg-brand-500 cursor-pointer">
+        </div>
+
+        <div class="relative flex py-1 items-center">
+          <div class="flex-grow border-t border-dark-border"></div>
+          <span class="flex-shrink mx-2 text-[10px] text-slate-500 uppercase tracking-widest font-semibold">или по прямой ссылке</span>
+          <div class="flex-grow border-t border-dark-border"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Название трека</label>
+          <input type="text" id="inputTrackTitle" required placeholder="Например: Cool Beat 2026" class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Исполнитель</label>
+          <input type="text" id="inputTrackArtist" required placeholder="Например: Cyber DJ" class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Прямая ссылка на MP3/Аудио</label>
+          <input type="url" id="inputTrackUrl" required placeholder="https://example.com/song.mp3" class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Жанр</label>
+          <input type="text" id="inputTrackGenre" placeholder="Electronic / Chill / Rock" class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" id="btnCancelAddTrack" class="px-4 py-2 rounded-xl text-xs text-slate-300 hover:bg-dark-hover transition">Отмена</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white transition shadow-lg shadow-brand-600/30">Добавить в плейлист</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Change / Join Room -->
+  <div id="roomModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-dark-card border border-dark-border rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-white text-lg flex items-center space-x-2">
+          <i class="fa-solid fa-door-open text-brand-500"></i>
+          <span>Войти в комнату</span>
+        </h3>
+        <button id="btnCloseRoomModal" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-400">Введите название или код комнаты, чтобы слушать музыку с друзьями:</p>
+
+      <div class="space-y-3">
+        <input type="text" id="inputNewRoomId" placeholder="Например: chill-vibe" class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+        
+        <div class="flex justify-between items-center text-xs text-slate-400">
+          <span>Быстрый вход:</span>
+          <div class="space-x-1">
+            <button class="quick-room-btn text-brand-accent hover:underline" data-room="chillout">#chillout</button>
+            <button class="quick-room-btn text-brand-accent hover:underline" data-room="party-2026">#party</button>
+            <button class="quick-room-btn text-brand-accent hover:underline" data-room="cyber-night">#cyber</button>
+          </div>
+        </div>
+
+        <button id="btnSubmitNewRoom" class="w-full py-2.5 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white transition shadow-lg shadow-brand-600/30">
+          Подключиться
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Box -->
+  <div id="toastNotification" class="fixed bottom-6 right-6 z-50 bg-dark-card border border-brand-500/40 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none">
+    <div id="toastIcon" class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-accent flex items-center justify-center text-sm">
+      <i class="fa-solid fa-check"></i>
+    </div>
+    <span id="toastMessage" class="text-xs font-semibold">Ссылка скопирована в буфер!</span>
+  </div>
+
+  <!-- Hidden HTML5 Audio Element -->
+  <audio id="mainAudioElement" preload="auto" crossorigin="anonymous"></audio>
+
+  <script>
+    // Curated high quality reliable Creative Commons MP3 tracks with zero CORS issues
+    const DEFAULT_TRACKS = [
+      {
+        id: 'track-1',
+        title: 'SoundHelix Dream Flight',
+        artist: 'Helix Sound Lab',
+        genre: 'Chill Synthwave',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+        artwork: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80',
+        platform: 'soundshare',
+        duration: '6:12'
+      },
+      {
+        id: 'track-2',
+        title: 'Cyber Highway Neon',
+        artist: 'Retro Horizon',
+        genre: 'Retrowave & Electro',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+        artwork: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&auto=format&fit=crop&q=80',
+        platform: 'soundshare',
+        duration: '7:05'
+      },
+      {
+        id: 'track-3',
+        title: 'Sunset Groove Session',
+        artist: 'Midnight Collective',
+        genre: 'Lofi Deep Funk',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+        artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80',
+        platform: 'soundshare',
+        duration: '5:44'
+      },
+      {
+        id: 'track-4',
+        title: 'Atmospheric Cloud Walk',
+        artist: 'Solar Resonance',
+        genre: 'Ambient Space',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
+        artwork: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80',
+        platform: 'soundshare',
+        duration: '4:20'
+      }
+    ];
+
+    function getRoomFromURL() {
+      const hash = window.location.hash.replace('#', '');
+      const match = hash.match(/room=([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return match[1].toLowerCase();
+      }
+      return 'party-chill';
+    }
+
+    let currentRoomId = getRoomFromURL();
+    let myNickname = 'Слушатель ' + Math.floor(100 + Math.random() * 900);
+    let isHost = false;
+    let peer = null;
+    let hostConnection = null;
+    let guestConnections = [];
+
+    // Core Room State
+    let roomState = {
+      roomId: currentRoomId,
+      hostName: 'DJ ' + myNickname,
+      currentTrackIndex: 0,
+      isPlaying: false,
+      playbackTime: 0,
+      updatedAt: Date.now(),
+      partyMode: false,
+      tracks: [...DEFAULT_TRACKS]
+    };
+
+    let audioContext = null;
+    let analyser = null;
+    let dataArray = null;
+    let isVisualizerSetup = false;
+
+    // UI Elements
+    const audio = document.getElementById('mainAudioElement');
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const playPauseIcon = document.getElementById('playPauseIcon');
+    const btnPrevTrack = document.getElementById('btnPrevTrack');
+    const btnNextTrack = document.getElementById('btnNextTrack');
+    const btnRewind10 = document.getElementById('btnRewind10');
+    const btnForward10 = document.getElementById('btnForward10');
+    const seekSlider = document.getElementById('seekSlider');
+    const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+    const durationDisplay = document.getElementById('durationDisplay');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const btnMute = document.getElementById('btnMute');
+    const volumeIcon = document.getElementById('volumeIcon');
+    const vinylDisc = document.getElementById('vinylDisc');
+    const vinylGlow = document.getElementById('vinylGlow');
+    const vinylCoverImg = document.getElementById('vinylCoverImg');
+    const platformBadge = document.getElementById('platformBadge');
+    const sourceLinksContainer = document.getElementById('sourceLinksContainer');
+    const btnOpenInApple = document.getElementById('btnOpenInApple');
+    const btnOpenInYandex = document.getElementById('btnOpenInYandex');
+    const currentTrackTitle = document.getElementById('currentTrackTitle');
+    const currentTrackArtist = document.getElementById('currentTrackArtist');
+    const genreTag = document.getElementById('genreTag');
+    const playlistContainer = document.getElementById('playlistContainer');
+    const tracksBadgeCount = document.getElementById('tracksBadgeCount');
+    const currentRoomDisplay = document.getElementById('currentRoomDisplay');
+    const listenerCountText = document.getElementById('listenerCountText');
+    const djNameDisplay = document.getElementById('djNameDisplay');
+    const djBadge = document.getElementById('djBadge');
+    const btnTogglePartyMode = document.getElementById('btnTogglePartyMode');
+    const partyModeLabel = document.getElementById('partyModeLabel');
+    const btnClaimDJ = document.getElementById('btnClaimDJ');
+    const audioUnlockBanner = document.getElementById('audioUnlockBanner');
+    const btnShareRoom = document.getElementById('btnShareRoom');
+    const p2pStatusBadge = document.getElementById('p2pStatusBadge');
+    const p2pStatusText = document.getElementById('p2pStatusText');
+    const visualizerCanvas = document.getElementById('visualizerCanvas');
+    const canvasCtx = visualizerCanvas.getContext('2d');
+    const chatMessagesContainer = document.getElementById('chatMessagesContainer');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+
+    // Smart Music Importer Elements
+    const smartMusicModal = document.getElementById('smartMusicModal');
+    const btnOpenStreamImportModal = document.getElementById('btnOpenStreamImportModal');
+    const btnCloseSmartMusicModal = document.getElementById('btnCloseSmartMusicModal');
+    const btnCloseSmartMusicModal2 = document.getElementById('btnCloseSmartMusicModal2');
+    const smartMusicSearchForm = document.getElementById('smartMusicSearchForm');
+    const inputSmartQuery = document.getElementById('inputSmartQuery');
+    const smartResultsContainer = document.getElementById('smartResultsContainer');
+    const searchBtnSpinner = document.getElementById('searchBtnSpinner');
+      const hostId = getHostPeerId(roomId);
+
+      // Attempt 1: Try to bind as Host (DJ)
+      try {
+        peer = new Peer(hostId, {
+          debug: 1,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+          }
+        });
+
+        peer.on('open', (id) => {
+          // Successfully registered as Host
+          isHost = true;
+          roomState.hostName = myNickname;
+          updateP2PStatus('host', 'Вы DJ (Хост комнаты)');
+          updateRoleUI();
+          updateListenerCount();
+          addLocalChatMessage('Система', `Вы создали комнату #${roomId}. Ссылка готова для друзей!`, true);
+
+          peer.on('connection', (conn) => {
+            handleGuestConnection(conn);
+          });
+        });
+
+        peer.on('error', (err) => {
+          if (err.type === 'unavailable-id') {
+            // The room already has an active Host, so we connect as Guest
+            initAsGuest(roomId, hostId);
+          } else {
+            console.warn('Peer error:', err);
+            updateP2PStatus('error', 'P2P Ошибка подключения');
+          }
+        });
+
+      } catch (err) {
+        console.error('P2P Init Error:', err);
+        initAsGuest(roomId, hostId);
+      }
+    }
+
+    function initAsGuest(roomId, hostId) {
+      isHost = false;
+      updateP2PStatus('connecting', 'Подключение к DJ комнаты...');
+
+      // Connect as an anonymous guest
+      peer = new Peer({
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
+      });
+
+      peer.on('open', () => {
+        const conn = peer.connect(hostId, { reliable: true });
+
+        conn.on('open', () => {
+          hostConnection = conn;
+          updateP2PStatus('guest', 'Подключен к DJ (В эфире)');
+          updateRoleUI();
+          addLocalChatMessage('Система', `Подключено к DJ комнаты #${roomId}! Музыка синхронизирована.`, false);
+
+          // Greet the host
+          conn.send({
+            type: 'HELLO',
+            nickname: myNickname
+          });
+        });
+
+        conn.on('data', (data) => {
+          handleIncomingP2PMessage(data);
+        });
+
+        conn.on('close', () => {
+          updateP2PStatus('disconnected', 'DJ отключился');
+          showToast('DJ покинул комнату. Вы можете нажать «Стать DJ» и продолжить вечеринку!', 'warning');
+          btnClaimDJ.classList.remove('hidden');
+        });
+
+        conn.on('error', (err) => {
+          console.warn('Host connection error:', err);
+          updateP2PStatus('error', 'Сбой связи с DJ');
+        });
+      });
+    }
+
+    function handleGuestConnection(conn) {
+      guestConnections.push(conn);
+      updateListenerCount();
+
+      conn.on('open', () => {
+        // Send complete room state to newcomer immediately
+        conn.send({
+          type: 'SYNC_STATE',
+          state: {
+            ...roomState,
+            playbackTime: audio.currentTime,
+            isPlaying: !audio.paused,
+            updatedAt: Date.now()
+          }
+        });
+      });
+
+      conn.on('data', (data) => {
+        if (data.type === 'HELLO') {
+          showToast(`${data.nickname || 'Новый слушатель'} присоединился к эфиру! 🎧`, 'info');
+          addLocalChatMessage('Система', `${data.nickname || 'Новый слушатель'} вошел в комнату`, false);
+        } else if (data.type === 'REQUEST_CONTROL') {
+          // Guest performed action in Party Mode
+          if (roomState.partyMode) {
+            broadcastPlaybackState(data.actionData);
+          }
+        } else if (data.type === 'CHAT') {
+          // Broadcast chat to all other guests and self
+          addLocalChatMessage(data.sender, data.text, false);
+          broadcastToAllGuests(data, conn);
+        } else if (data.type === 'REACTION') {
+          spawnFloatingEmoji(data.emoji);
+          broadcastToAllGuests(data, conn);
+        } else if (data.type === 'CLAIM_DJ') {
+          // Transfer host
+          roomState.hostName = data.nickname;
+          showToast(`${data.nickname} стал новым DJ комнаты!`, 'info');
+          broadcastPlaybackState({ hostName: data.nickname });
+        }
+      });
+
+      conn.on('close', () => {
+        guestConnections = guestConnections.filter(c => c !== conn);
+        updateListenerCount();
+      });
+    }
+
+    function broadcastToAllGuests(payload, excludeConn = null) {
+      guestConnections.forEach(c => {
+        if (c !== excludeConn && c.open) {
+          try { c.send(payload); } catch (e) {}
+        }
+      });
+    }
+
+    function handleIncomingP2PMessage(data) {
+      if (data.type === 'SYNC_STATE') {
+        const incoming = data.state;
+        const trackChanged = incoming.currentTrackIndex !== roomState.currentTrackIndex;
+        const tracksChanged = JSON.stringify(incoming.tracks) !== JSON.stringify(roomState.tracks);
+
+        roomState = { ...incoming };
+
+        if (tracksChanged || trackChanged) {
+          renderPlaylist();
+        }
+
+        updateRoleUI();
+
+        // Update track source if needed
+        const currentTrack = roomState.tracks[roomState.currentTrackIndex] || roomState.tracks[0];
+        if (currentTrack && audio.src !== currentTrack.url) {
+          audio.src = currentTrack.url;
+          audio.load();
+        }
+
+        if (currentTrack) {
+          currentTrackTitle.textContent = currentTrack.title;
+          currentTrackArtist.textContent = currentTrack.artist;
+          genreTag.textContent = currentTrack.genre || 'Музыка';
+        }
+
+        // Calculate synchronized playback position with latency compensation
+        let targetTime = incoming.playbackTime || 0;
+        if (incoming.isPlaying && incoming.updatedAt) {
+          const elapsed = (Date.now() - incoming.updatedAt) / 1000;
+          targetTime += Math.max(0, elapsed);
+        }
+
+        // Anti-drift: smoothly sync timeline
+        const drift = Math.abs(audio.currentTime - targetTime);
+        if (drift > 1.2 && isFinite(targetTime)) {
+          audio.currentTime = Math.min(targetTime, audio.duration || targetTime);
+        }
+
+        // Play / Pause match
+        if (incoming.isPlaying) {
+          if (audio.paused) {
+            audio.play().catch(() => audioUnlockBanner.classList.remove('hidden'));
+          }
+          setPlayingUIState(true);
+        } else {
+          if (!audio.paused) {
+            audio.pause();
+          }
+          setPlayingUIState(false);
+        }
+      } else if (data.type === 'CHAT') {
+        addLocalChatMessage(data.sender, data.text, false);
+      } else if (data.type === 'REACTION') {
+        spawnFloatingEmoji(data.emoji);
+      } else if (data.type === 'LISTENERS_COUNT') {
+        listenerCountText.textContent = `${data.count} онлайн`;
+      }
+    }
+
+    function broadcastPlaybackState(actionData) {
+      if (!canControl()) {
+        showToast("Только DJ может управлять в этой комнате! Включите Party Mode или станьте DJ.", "warning");
+        return;
+      }
+
+      // Update local state
+      roomState = {
+        ...roomState,
+        ...actionData,
+        playbackTime: actionData.playbackTime !== undefined ? actionData.playbackTime : audio.currentTime,
+        isPlaying: actionData.isPlaying !== undefined ? actionData.isPlaying : !audio.paused,
+        updatedAt: Date.now()
+      };
+
+      updateUI();
+
+      if (isHost) {
+        // Broadcast directly to all listeners
+        broadcastToAllGuests({
+          type: 'SYNC_STATE',
+          state: roomState
+        });
+      } else if (hostConnection && hostConnection.open) {
+        // Send request to host to execute action
+        hostConnection.send({
+          type: 'REQUEST_CONTROL',
+          actionData: actionData
+        });
+      }
+    }
+
+    function canControl() {
+      return isHost || roomState.partyMode;
+    }
+
+    function updateP2PStatus(status, label) {
+      p2pStatusText.textContent = label;
+      if (status === 'host') {
+        p2pStatusBadge.className = "flex items-center bg-brand-500/20 border border-brand-500/40 rounded-xl px-3 py-1.5 text-xs text-brand-accent";
+        p2pStatusBadge.firstElementChild.className = "w-2 h-2 rounded-full bg-brand-accent animate-pulse mr-2";
+      } else if (status === 'guest') {
+        p2pStatusBadge.className = "flex items-center bg-emerald-500/20 border border-emerald-500/40 rounded-xl px-3 py-1.5 text-xs text-emerald-400";
+        p2pStatusBadge.firstElementChild.className = "w-2 h-2 rounded-full bg-emerald-400 mr-2";
+      } else if (status === 'connecting') {
+        p2pStatusBadge.className = "flex items-center bg-amber-500/20 border border-amber-500/40 rounded-xl px-3 py-1.5 text-xs text-amber-400";
+        p2pStatusBadge.firstElementChild.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping mr-2";
+      } else {
+        p2pStatusBadge.className = "flex items-center bg-rose-500/20 border border-rose-500/40 rounded-xl px-3 py-1.5 text-xs text-rose-400";
+        p2pStatusBadge.firstElementChild.className = "w-2 h-2 rounded-full bg-rose-400 mr-2";
+      }
+    }
+
+    function updateListenerCount() {
+      const count = isHost ? (guestConnections.length + 1) : 2;
+      listenerCountText.textContent = `${count} онлайн`;
+      if (isHost) {
+        broadcastToAllGuests({
+          type: 'LISTENERS_COUNT',
+          count: count
+        });
+      }
+    }
+
+    function updateRoleUI() {
+      if (isHost) {
+        djNameDisplay.textContent = `DJ: Вы (${myNickname})`;
+        djBadge.className = "inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-lg bg-brand-500/20 text-brand-300 border border-brand-500/30";
+        btnClaimDJ.classList.add('hidden');
+      } else {
+        djNameDisplay.textContent = `DJ: ${roomState.hostName || 'Хост'}`;
+        djBadge.className = "inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-lg bg-dark-bg text-slate-400 border border-dark-border";
+        btnClaimDJ.classList.remove('hidden');
+      }
+
+      if (roomState.partyMode) {
+        partyModeLabel.textContent = "Party Mode (Все могут управлять)";
+        btnTogglePartyMode.classList.add('text-brand-accent', 'border-brand-accent/40');
+      } else {
+        partyModeLabel.textContent = isHost ? "DJ Режим (только вы)" : "DJ Режим (только хост)";
+        btnTogglePartyMode.classList.remove('text-brand-accent', 'border-brand-accent/40');
+      }
+    }
+
+    function setPlayingUIState(isPlaying) {
+      if (isPlaying) {
+        playPauseIcon.classList.remove('fa-play');
+        playPauseIcon.classList.add('fa-pause');
+        vinylDisc.classList.remove('paused-spin');
+        vinylGlow.classList.remove('opacity-0');
+        vinylGlow.classList.add('opacity-100');
+        initVisualizer();
+      } else {
+        playPauseIcon.classList.remove('fa-pause');
+        playPauseIcon.classList.add('fa-play');
+        vinylDisc.classList.add('paused-spin');
+        vinylGlow.classList.add('opacity-0');
+        vinylGlow.classList.remove('opacity-100');
+      }
+    }
+
+    function updateUI() {
+      const currentTrack = roomState.tracks[roomState.currentTrackIndex] || roomState.tracks[0];
+      if (currentTrack) {
+        currentTrackTitle.textContent = currentTrack.title;
+        currentTrackArtist.textContent = currentTrack.artist;
+        genreTag.textContent = currentTrack.genre || 'Музыка';
+
+        // Update vinyl cover image
+        if (currentTrack.artwork && vinylCoverImg) {
+          vinylCoverImg.src = currentTrack.artwork;
+        }
+
+        // Update platform badge & external links
+        if (currentTrack.platform === 'apple' || currentTrack.appleUrl) {
+          platformBadge.className = "text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-full inline-flex items-center space-x-1 bg-slate-100/10 text-slate-200 border border-slate-700";
+          platformBadge.innerHTML = '<i class="fa-brands fa-apple mr-1"></i> Apple Music';
+        } else if (currentTrack.platform === 'yandex' || currentTrack.yandexUrl) {
+          platformBadge.className = "text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-full inline-flex items-center space-x-1 bg-red-500/15 text-red-400 border border-red-500/30";
+          platformBadge.innerHTML = '<i class="fa-brands fa-yandex mr-1"></i> Яндекс.Музыка';
+        } else {
+          platformBadge.className = "hidden";
+        }
+
+        // Show buttons to open in Apple Music / Yandex
+        if (currentTrack.appleUrl || currentTrack.yandexUrl) {
+          sourceLinksContainer.classList.remove('hidden');
+          if (btnOpenInApple) {
+            btnOpenInApple.href = currentTrack.appleUrl || `https://music.apple.com/ru/search?term=${encodeURIComponent(currentTrack.artist + ' ' + currentTrack.title)}`;
+          }
+          if (btnOpenInYandex) {
+            btnOpenInYandex.href = currentTrack.yandexUrl || `https://music.yandex.ru/search?text=${encodeURIComponent(currentTrack.artist + ' ' + currentTrack.title)}`;
+          }
+        } else {
+          sourceLinksContainer.classList.add('hidden');
+        }
+      }
+      setPlayingUIState(!audio.paused);
+      updateRoleUI();
+    }
+
+    // Main Play/Pause
+    btnPlayPause.addEventListener('click', () => {
+      if (audio.paused) {
+        audio.play().then(() => {
+          broadcastPlaybackState({ isPlaying: true, playbackTime: audio.currentTime });
+        }).catch(() => audioUnlockBanner.classList.remove('hidden'));
+      } else {
+        audio.pause();
+        broadcastPlaybackState({ isPlaying: false, playbackTime: audio.currentTime });
+      }
+    });
+
+    // Next Track
+    btnNextTrack.addEventListener('click', () => {
+      const nextIdx = (roomState.currentTrackIndex + 1) % roomState.tracks.length;
+      switchTrack(nextIdx);
+    });
+
+    // Prev Track
+    btnPrevTrack.addEventListener('click', () => {
+      const prevIdx = (roomState.currentTrackIndex - 1 + roomState.tracks.length) % roomState.tracks.length;
+      switchTrack(prevIdx);
+    });
+
+    // Skip +/- 10s
+    btnRewind10.addEventListener('click', () => {
+      const target = Math.max(0, audio.currentTime - 10);
+      audio.currentTime = target;
+      broadcastPlaybackState({ playbackTime: target });
+    });
+
+    btnForward10.addEventListener('click', () => {
+      const target = Math.min(audio.duration || 9999, audio.currentTime + 10);
+      audio.currentTime = target;
+      broadcastPlaybackState({ playbackTime: target });
+    });
+
+    function switchTrack(index) {
+      const track = roomState.tracks[index];
+      if (!track) return;
+      audio.src = track.url;
+      audio.currentTime = 0;
+      audio.play().then(() => {
+        broadcastPlaybackState({
+          currentTrackIndex: index,
+          playbackTime: 0,
+          isPlaying: true
+        });
+      }).catch(() => audioUnlockBanner.classList.remove('hidden'));
+      renderPlaylist();
+    }
+
+    // Seek Bar
+    seekSlider.addEventListener('input', () => {
+      if (!audio.duration) return;
+      const targetTime = (seekSlider.value / 100) * audio.duration;
+      currentTimeDisplay.textContent = formatTime(targetTime);
+    });
+
+    seekSlider.addEventListener('change', () => {
+      if (!audio.duration) return;
+      const targetTime = (seekSlider.value / 100) * audio.duration;
+      audio.currentTime = targetTime;
+      broadcastPlaybackState({ playbackTime: targetTime });
+    });
+
+    // Audio element update listener
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration) return;
+      const pct = (audio.currentTime / audio.duration) * 100;
+      seekSlider.value = pct;
+      currentTimeDisplay.textContent = formatTime(audio.currentTime);
+      durationDisplay.textContent = formatTime(audio.duration);
+    });
+
+    audio.addEventListener('ended', () => {
+      if (isHost) {
+        const nextIdx = (roomState.currentTrackIndex + 1) % roomState.tracks.length;
+        switchTrack(nextIdx);
+      }
+    });
+
+    // Volume & Mute
+    volumeSlider.addEventListener('input', (e) => {
+      audio.volume = parseFloat(e.target.value);
+      audio.muted = false;
+      volumeIcon.className = audio.volume === 0 ? "fa-solid fa-volume-xmark" : "fa-solid fa-volume-high";
+    });
+
+    btnMute.addEventListener('click', () => {
+      audio.muted = !audio.muted;
+      volumeIcon.className = audio.muted ? "fa-solid fa-volume-xmark text-rose-400" : "fa-solid fa-volume-high";
+    });
+
+    const inputLocalAudioFile = document.getElementById('inputLocalAudioFile');
+    if (inputLocalAudioFile) {
+      inputLocalAudioFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Auto-fill track details from file name
+        const cleanName = file.name.replace(/\.[^/.]+$/, "");
+        document.getElementById('inputTrackTitle').value = cleanName;
+        document.getElementById('inputTrackArtist').value = myNickname;
+
+        // Create instant object URL for playback
+        const objectUrl = URL.createObjectURL(file);
+        document.getElementById('inputTrackUrl').value = objectUrl;
+        showToast(`Файл "${file.name}" выбран для добавления!`, 'info');
+      });
+    }
+
+    // Party mode toggle
+    btnTogglePartyMode.addEventListener('click', () => {
+      if (!isHost) {
+        showToast("Только создатель комнаты может менять режим доступа.", "warning");
+        return;
+      }
+      const newMode = !roomState.partyMode;
+      broadcastPlaybackState({ partyMode: newMode });
+      showToast(newMode ? "Party Mode: все могут управлять звуком!" : "DJ Mode: управляет только создатель.", "info");
+    });
+
+    // Claim DJ
+    btnClaimDJ.addEventListener('click', () => {
+      isHost = true;
+      roomState.hostName = myNickname;
+      if (hostConnection && hostConnection.open) {
+        hostConnection.send({ type: 'CLAIM_DJ', nickname: myNickname });
+      }
+      updateRoleUI();
+      showToast("Вы взяли на себя роль DJ комнаты!", "success");
+    });
+
+    // Unlock banner
+    audioUnlockBanner.addEventListener('click', () => {
+      audio.play().then(() => {
+        audioUnlockBanner.classList.add('hidden');
+        setPlayingUIState(true);
+      }).catch(e => console.warn(e));
+    });
+
+    function renderPlaylist() {
+      playlistContainer.innerHTML = '';
+      tracksBadgeCount.textContent = `${roomState.tracks.length} треков`;
+
+      roomState.tracks.forEach((track, index) => {
+        const isCurrent = index === roomState.currentTrackIndex;
+        const item = document.createElement('div');
+        item.className = `group flex items-center justify-between p-2.5 rounded-2xl cursor-pointer transition border ${
+          isCurrent 
+            ? 'bg-brand-500/15 border-brand-500/40 text-white' 
+            : 'bg-dark-bg/60 border-dark-border/60 hover:bg-dark-hover text-slate-300'
+        }`;
+
+        const coverSrc = track.artwork || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop&q=80';
+
+        // Platform indicator tag
+        let platformIcon = '';
+        if (track.platform === 'apple') {
+          platformIcon = '<span class="text-[10px] text-slate-300 bg-black/60 px-1.5 py-0.5 rounded border border-white/20"><i class="fa-brands fa-apple mr-0.5"></i>Apple</span>';
+        } else if (track.platform === 'yandex') {
+          platformIcon = '<span class="text-[10px] text-red-400 bg-red-950/60 px-1.5 py-0.5 rounded border border-red-500/30"><i class="fa-brands fa-yandex mr-0.5"></i>Яндекс</span>';
+        }
+
+        item.innerHTML = `
+          <div class="flex items-center space-x-3 overflow-hidden">
+            <div class="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-dark-border shadow-sm">
+              <img src="${coverSrc}" alt="cover" class="w-full h-full object-cover">
+              ${isCurrent && !audio.paused ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><i class="fa-solid fa-chart-simple text-white text-xs animate-bounce"></i></div>' : ''}
+            </div>
+            <div class="truncate">
+              <div class="flex items-center space-x-1.5 truncate">
+                <h4 class="text-xs font-bold truncate ${isCurrent ? 'text-white' : 'group-hover:text-white'}">${escapeHtml(track.title)}</h4>
+                ${platformIcon}
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">${escapeHtml(track.artist)}</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 text-xs font-mono text-slate-400 shrink-0">
+            <span>${track.duration || ''}</span>
+            <i class="fa-solid fa-play text-[10px] opacity-0 group-hover:opacity-100 transition text-brand-accent"></i>
+          </div>
+        `;
+
+        item.addEventListener('click', () => {
+          if (!canControl()) {
+            showToast("Только DJ может выбирать трек из списка.", "warning");
+            return;
+          }
+          switchTrack(index);
+        });
+
+        playlistContainer.appendChild(item);
+      });
+    }
+    // Smart Importer Event Listeners & Catalog Resolver
+    if (btnOpenStreamImportModal) {
+      btnOpenStreamImportModal.addEventListener('click', () => {
+        if (!canControl()) {
+          showToast("Только DJ может добавлять треки в комнату.", "warning");
+          return;
+        }
+        smartMusicModal.classList.remove('hidden');
+        inputSmartQuery.focus();
+      });
+    }
+
+    if (btnCloseSmartMusicModal) {
+      btnCloseSmartMusicModal.addEventListener('click', () => smartMusicModal.classList.add('hidden'));
+    }
+    if (btnCloseSmartMusicModal2) {
+      btnCloseSmartMusicModal2.addEventListener('click', () => smartMusicModal.classList.add('hidden'));
+    }
+
+    // Quick suggestion chips
+    document.querySelectorAll('.smart-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        inputSmartQuery.value = chip.dataset.query;
+        smartMusicSearchForm.dispatchEvent(new Event('submit'));
+      });
+    });
+
+    // Handle Search / Link parsing
+    smartMusicSearchForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const rawQuery = inputSmartQuery.value.trim();
+      if (!rawQuery) return;
+
+      searchBtnSpinner.classList.remove('hidden');
+      smartResultsContainer.innerHTML = `
+        <div class="flex flex-col items-center justify-center p-8 space-y-3">
+          <i class="fa-solid fa-compact-disc text-3xl text-brand-accent animate-spin-slow"></i>
+          <span class="text-xs text-slate-400 font-medium">Поиск и резолвинг аудиопотока...</span>
+        </div>
+      `;
+
+      try {
+        const { items, detectedPlatform } = await resolveMusicStream(rawQuery);
+        renderSmartSearchResults(items, detectedPlatform);
+      } catch (err) {
+        console.error("Music Resolver Error:", err);
+        smartResultsContainer.innerHTML = `
+          <div class="text-center p-6 text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-2xl">
+            <i class="fa-solid fa-triangle-exclamation text-lg mb-2"></i>
+            <p class="font-semibold">Не удалось найти поток для этой ссылки</p>
+            <p class="text-[11px] text-slate-400 mt-1">Попробуйте ввести название трека текстом (например: "Miyagi Captain" или "The Weeknd")</p>
+          </div>
+        `;
+      } finally {
+        searchBtnSpinner.classList.add('hidden');
+      }
+    });
+
+    async function resolveMusicStream(query) {
+      let searchTerm = query;
+      let detectedPlatform = 'auto';
+      let appleTrackId = null;
+
+      // 1. Check if user pasted an Apple Music link
+      if (query.includes('music.apple.com')) {
+        detectedPlatform = 'apple';
+        const matchTrack = query.match(/[?&]i=(\d+)/);
+        const matchAlbum = query.match(/\/album\/[^\/]+\/(\d+)/);
+        if (matchTrack && matchTrack[1]) {
+          appleTrackId = matchTrack[1];
+        } else if (matchAlbum && matchAlbum[1]) {
+          appleTrackId = matchAlbum[1];
+        }
+      }
+
+      // 2. Check if user pasted a Yandex Music link
+      if (query.includes('music.yandex.ru')) {
+        detectedPlatform = 'yandex';
+        // Extract track ID from /track/XXXXX or /album/XXXX/track/YYYY
+        const matchYTrack = query.match(/track\/(\d+)/);
+        if (matchYTrack && matchYTrack[1]) {
+          const trackId = matchYTrack[1];
+          try {
+            // Fetch track metadata via public CORS-proxy of Yandex Music handler
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://music.yandex.ru/handlers/track.jsx?track=' + trackId)}`;
+            const res = await fetch(proxyUrl);
+            if (res.ok) {
+              const yData = await res.json();
+              if (yData && yData.track) {
+                const artistName = yData.track.artists ? yData.track.artists.map(a => a.name).join(' ') : '';
+                const trackTitle = yData.track.title || '';
+                searchTerm = `${artistName} ${trackTitle}`.trim();
+              }
+            }
+          } catch(err) {
+            console.warn("Yandex handler parse fallback:", err);
+          }
+        }
+      }
+
+      // 3. Query the catalog API for playable synchronized audio stream & high-res artwork
+      let apiUrl = '';
+      if (appleTrackId) {
+        apiUrl = `https://itunes.apple.com/lookup?id=${appleTrackId}&entity=song`;
+      } else {
+        apiUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=12`;
+      }
+
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      return {
+        items: data.results || [],
+        detectedPlatform: detectedPlatform
+      };
+    }
+
+    function renderSmartSearchResults(results, platformHint) {
+      if (!results || results.length === 0) {
+        smartResultsContainer.innerHTML = `
+          <div class="text-center p-6 text-slate-400 text-xs">
+            <i class="fa-solid fa-face-frown text-xl mb-1 text-slate-500"></i>
+            <p>Ничего не найдено. Попробуйте уточнить имя исполнителя или название песни.</p>
+          </div>
+        `;
+        return;
+      }
+
+      smartResultsContainer.innerHTML = '';
+
+      results.forEach(item => {
+        // High-res album artwork (replacing 100x100 with 600x600)
+        const hdArtwork = item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80';
+        const appleTrackUrl = item.trackViewUrl || `https://music.apple.com/ru/search?term=${encodeURIComponent(item.artistName + ' ' + item.trackName)}`;
+        const yandexTrackUrl = `https://music.yandex.ru/search?text=${encodeURIComponent(item.artistName + ' ' + item.trackName)}`;
+
+        const card = document.createElement('div');
+        card.className = "flex items-center justify-between p-3 rounded-2xl bg-dark-bg/80 border border-dark-border hover:border-brand-500/50 transition group";
+
+        card.innerHTML = `
+          <div class="flex items-center space-x-3 overflow-hidden flex-1 mr-3">
+            <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-dark-border/80 shadow-md">
+              <img src="${hdArtwork}" alt="Art" class="w-full h-full object-cover">
+            </div>
+            <div class="truncate">
+              <h4 class="text-xs font-bold text-white truncate group-hover:text-brand-accent transition">${escapeHtml(item.trackName)}</h4>
+              <p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.artistName)}</p>
+              <div class="flex items-center space-x-2 mt-1">
+                <a href="${appleTrackUrl}" target="_blank" rel="noopener noreferrer" class="text-[10px] text-slate-400 hover:text-white flex items-center space-x-0.5">
+                  <i class="fa-brands fa-apple"></i>
+                  <span>Apple</span>
+                </a>
+                <span class="text-slate-600">•</span>
+                <a href="${yandexTrackUrl}" target="_blank" rel="noopener noreferrer" class="text-[10px] text-slate-400 hover:text-red-400 flex items-center space-x-0.5">
+                  <i class="fa-brands fa-yandex text-red-500"></i>
+                  <span>Яндекс</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2 shrink-0">
+            <!-- Add to room playlist button -->
+            <button class="btn-add-smart-track px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-brand-600/30 active:scale-95 transition">
+              <i class="fa-solid fa-plus text-[10px]"></i>
+              <span>В эфир</span>
+            </button>
+          </div>
+        `;
+
+        card.querySelector('.btn-add-smart-track').addEventListener('click', () => {
+          addStreamTrackToRoom({
+            id: 'track-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+            title: item.trackName,
+            artist: item.artistName,
+            genre: item.primaryGenreName || 'Music',
+            url: item.previewUrl,
+            artwork: hdArtwork,
+            platform: platformHint === 'yandex' ? 'yandex' : 'apple',
+            appleUrl: appleTrackUrl,
+            yandexUrl: yandexTrackUrl,
+            duration: formatTime(item.trackTimeMillis ? item.trackTimeMillis / 1000 : 30)
+          });
+        });
+
+        smartResultsContainer.appendChild(card);
+      });
+    }
+
+    function addStreamTrackToRoom(trackObj) {
+      if (!canControl()) {
+        showToast("Только DJ может добавлять треки в очередь.", "warning");
+        return;
+      }
+
+      const updatedTracks = [...roomState.tracks, trackObj];
+      const newTrackIndex = updatedTracks.length - 1;
+
+      // Broadcast new track to all guests
+      broadcastPlaybackState({
+        tracks: updatedTracks
+      });
+
+      renderPlaylist();
+      showToast(`Трек "${trackObj.title}" добавлен в плейлист!`, 'success');
+      smartMusicModal.classList.add('hidden');
+
+      // Auto switch to newly added track
+      switchTrack(newTrackIndex);
+    }
+    }
+
+    function drawVisualizer() {
+      requestAnimationFrame(drawVisualizer);
+      if (!isVisualizerSetup || !analyser) return;
+
+      analyser.getByteFrequencyData(dataArray);
+
+      const width = visualizerCanvas.width = visualizerCanvas.parentElement.clientWidth;
+      const height = visualizerCanvas.height = visualizerCanvas.parentElement.clientHeight;
+
+      canvasCtx.clearRect(0, 0, width, height);
+      const barWidth = (width / dataArray.length) * 1.6;
+      let x = 0;
+
+      for (let i = 0; i < dataArray.length; i++) {
+        const barHeight = (dataArray[i] / 255) * height * 0.9;
+        const gradient = canvasCtx.createLinearGradient(0, height, 0, 0);
+        gradient.addColorStop(0, '#7c3aed');
+        gradient.addColorStop(0.6, '#06b6d4');
+        gradient.addColorStop(1, '#ec4899');
+
+        canvasCtx.fillStyle = gradient;
+        canvasCtx.fillRect(x, height - barHeight, barWidth - 3, barHeight);
+        x += barWidth;
+      }
+    }
+
+    function drawSimulatedVisualizer() {
+      requestAnimationFrame(drawSimulatedVisualizer);
+      const width = visualizerCanvas.width = visualizerCanvas.parentElement.clientWidth;
+      const height = visualizerCanvas.height = visualizerCanvas.parentElement.clientHeight;
+
+      canvasCtx.clearRect(0, 0, width, height);
+      const bars = 24;
+      const barWidth = width / bars;
+
+      for (let i = 0; i < bars; i++) {
+        const isPlaying = !audio.paused;
+        const barHeight = isPlaying ? (Math.sin(Date.now() / 180 + i) * 0.4 + 0.5) * height * 0.8 : 4;
+        const gradient = canvasCtx.createLinearGradient(0, height, 0, 0);
+        gradient.addColorStop(0, '#7c3aed');
+        gradient.addColorStop(1, '#06b6d4');
+
+        canvasCtx.fillStyle = gradient;
+        canvasCtx.fillRect(i * barWidth, height - barHeight, barWidth - 4, barHeight);
+      }
+    }
+
+    // Reaction Emojis
+    document.querySelectorAll('.reaction-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const emoji = btn.dataset.emoji;
+        spawnFloatingEmoji(emoji);
+
+        const payload = { type: 'REACTION', emoji };
+        if (isHost) {
+          broadcastToAllGuests(payload);
+        } else if (hostConnection && hostConnection.open) {
+          hostConnection.send(payload);
+        }
+      });
+    });
+
+    function spawnFloatingEmoji(emoji) {
+      const container = document.getElementById('floatingEmojiContainer');
+      const el = document.createElement('div');
+      el.className = 'absolute text-3xl select-none animate-float-up pointer-events-none z-40';
+      el.textContent = emoji;
+
+      const left = 20 + Math.random() * 60;
+      el.style.left = `${left}%`;
+      el.style.bottom = '20px';
+
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 2600);
+    }
+
+    // Chat
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = chatInput.value.trim();
+      if (!val) return;
+
+      addLocalChatMessage(myNickname, val, true);
+
+      const payload = {
+        type: 'CHAT',
+        sender: myNickname,
+        text: val
+      };
+
+      if (isHost) {
+        broadcastToAllGuests(payload);
+      } else if (hostConnection && hostConnection.open) {
+        hostConnection.send(payload);
+      }
+
+      chatInput.value = '';
+    });
+
+    function addLocalChatMessage(sender, text, isMe) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `p-2.5 rounded-2xl flex flex-col max-w-[85%] ${
+        isMe 
+          ? 'ml-auto bg-brand-600/30 border border-brand-500/40 text-right' 
+          : 'mr-auto bg-dark-bg/80 border border-dark-border/80'
+      }`;
+
+      msgDiv.innerHTML = `
+        <span class="text-[10px] font-bold ${isMe ? 'text-brand-accent' : 'text-slate-400'}">${escapeHtml(sender)}</span>
+        <span class="text-xs text-slate-100 break-words mt-0.5">${escapeHtml(text)}</span>
+      `;
+      chatMessagesContainer.appendChild(msgDiv);
+      chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+    }
+
+    // Share Room Link
+    btnShareRoom.addEventListener('click', () => {
+      const roomUrl = `${window.location.origin}${window.location.pathname}#room=${currentRoomId}`;
+      copyToClipboard(roomUrl);
+      showToast("Ссылка на комнату скопирована! Отправь другу 🎧", "success");
+    });
+
+    // Room Switcher
+    const roomModal = document.getElementById('roomModal');
+    document.getElementById('btnChangeRoom').addEventListener('click', () => roomModal.classList.remove('hidden'));
+    document.getElementById('btnCloseRoomModal').addEventListener('click', () => roomModal.classList.add('hidden'));
+
+    document.querySelectorAll('.quick-room-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('inputNewRoomId').value = btn.dataset.room;
+      });
+    });
+
+    document.getElementById('btnSubmitNewRoom').addEventListener('click', () => {
+      const val = document.getElementById('inputNewRoomId').value.trim().toLowerCase();
+      if (!val) return;
+      currentRoomId = val.replace(/[^a-z0-9_-]/g, '-');
+      window.location.hash = `room=${currentRoomId}`;
+      currentRoomDisplay.textContent = currentRoomId;
+      roomModal.classList.add('hidden');
+      initWebRTCNetworking(currentRoomId);
+      showToast(`Вы перешли в комнату: #${currentRoomId}`, 'info');
+    });
+
+    // Add Track Modal
+    const addTrackModal = document.getElementById('addTrackModal');
+    document.getElementById('btnOpenAddTrackModal').addEventListener('click', () => {
+      if (!canControl()) {
+        showToast("Только DJ может добавлять треки в очередь.", "warning");
+        return;
+      }
+      addTrackModal.classList.remove('hidden');
+    });
+
+    document.getElementById('btnCloseAddTrackModal').addEventListener('click', () => addTrackModal.classList.add('hidden'));
+    document.getElementById('btnCancelAddTrack').addEventListener('click', () => addTrackModal.classList.add('hidden'));
+
+    document.getElementById('formAddTrack').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('inputTrackTitle').value.trim();
+      const artist = document.getElementById('inputTrackArtist').value.trim();
+      const url = document.getElementById('inputTrackUrl').value.trim();
+      const genre = document.getElementById('inputTrackGenre').value.trim() || 'Custom';
+
+      const newTrack = {
+        id: 'track-' + Date.now(),
+        title,
+        artist,
+        url,
+        genre,
+        artwork: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80',
+        duration: 'Custom'
+      };
+
+      const updatedTracks = [...roomState.tracks, newTrack];
+      broadcastPlaybackState({ tracks: updatedTracks });
+
+      addTrackModal.classList.add('hidden');
+      document.getElementById('formAddTrack').reset();
+      showToast(`Трек "${title}" добавлен в плейлист!`, 'success');
+    });
+
+    function formatTime(sec) {
+      if (isNaN(sec) || !isFinite(sec)) return '0:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toastNotification');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = message;
+      if (type === 'success') {
+        toastIcon.className = "w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm";
+        toastIcon.innerHTML = '<i class="fa-solid fa-check"></i>';
+      } else if (type === 'warning') {
+        toastIcon.className = "w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm";
+        toastIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+      } else {
+        toastIcon.className = "w-7 h-7 rounded-lg bg-brand-500/20 text-brand-accent flex items-center justify-center text-sm";
+        toastIcon.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+      }
+
+      toast.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+      }, 3500);
+    }
+
+    function copyToClipboard(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        console.warn('Fallback copy failed', err);
+      }
+      document.body.removeChild(textArea);
+    }
+
+    window.addEventListener('load', () => {
+      // Initialize first track
+      audio.src = roomState.tracks[0].url;
+      renderPlaylist();
+      drawSimulatedVisualizer();
+      initWebRTCNetworking(currentRoomId);
+    });
+  </script>
+</body>
+</html>
