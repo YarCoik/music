@@ -121,9 +121,9 @@
       <div>
         <div class="flex items-center space-x-2">
           <span class="font-black text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-accent bg-clip-text text-transparent">SoundShare</span>
-          <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-brand-500/20 text-brand-accent border border-brand-accent/30 rounded-full">Sync Live</span>
+          <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-brand-500/20 text-brand-accent border border-brand-accent/30 rounded-full">WebRTC Live</span>
         </div>
-        <p class="text-xs text-slate-400 hidden sm:block">Слушай музыку синхронно с друзьями</p>
+        <p class="text-xs text-slate-400 hidden sm:block">Слушай музыку синхронно с друзьями в реальном времени</p>
       </div>
     </div>
 
@@ -148,22 +148,22 @@
       </div>
 
       <!-- Share Room Button -->
-      <button id="btnShareRoom" class="flex items-center space-x-2 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white font-medium text-xs sm:text-sm px-3.5 py-2 rounded-xl transition shadow-md shadow-brand-600/25 active:scale-95">
+      <button id="btnShareRoom" type="button" class="flex items-center space-x-2 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white font-medium text-xs sm:text-sm px-3.5 py-2 rounded-xl transition shadow-md shadow-brand-600/25 active:scale-95 cursor-pointer">
         <i class="fa-solid fa-share-nodes"></i>
         <span>Поделиться ссылкой</span>
       </button>
 
-      <!-- Change Room / New Room Modal trigger -->
-      <button id="btnChangeRoom" class="bg-dark-hover hover:bg-slate-800 text-slate-300 hover:text-white px-3 py-2 rounded-xl text-xs sm:text-sm border border-dark-border transition">
+      <!-- Change Room Button -->
+      <button id="btnChangeRoom" type="button" class="bg-dark-hover hover:bg-slate-800 text-slate-300 hover:text-white px-3 py-2 rounded-xl text-xs sm:text-sm border border-dark-border transition">
         <i class="fa-solid fa-arrow-right-arrow-left mr-1"></i> Сменить
       </button>
     </div>
   </header>
 
-  <!-- Autoplay unlock alert (for browsers requiring interaction) -->
+  <!-- Autoplay unlock banner -->
   <div id="audioUnlockBanner" class="hidden bg-gradient-to-r from-amber-600/90 to-rose-600/90 text-white px-4 py-2.5 text-center text-sm font-medium z-50 flex items-center justify-center space-x-3 shadow-lg cursor-pointer">
     <i class="fa-solid fa-volume-xmark text-lg animate-bounce"></i>
-    <span>Браузер заблокировал автовоспроизведение звука. <strong>Нажмите сюда</strong>, чтобы включить трансляцию!</span>
+    <span>Браузер ограничил автовоспроизведение звука. <strong>Нажмите сюда</strong>, чтобы включить звук!</span>
     <button class="bg-white text-slate-900 text-xs font-bold px-3 py-1 rounded-lg ml-2">Включить звук</button>
   </div>
 
@@ -174,7 +174,6 @@
       
       <!-- Visualizer & Vinyl Deck Card -->
       <div class="bg-dark-card border border-dark-border rounded-3xl p-6 relative overflow-hidden shadow-2xl">
-        <!-- Ambient lighting glow -->
         <div class="absolute -top-24 -right-24 w-72 h-72 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-brand-accent/15 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -191,7 +190,7 @@
 
           <!-- DJ Control Lock Toggle -->
           <div class="flex items-center space-x-2 text-xs">
-            <button id="btnTogglePartyMode" class="text-slate-400 hover:text-white bg-dark-bg/80 border border-dark-border px-2.5 py-1 rounded-lg transition" title="В Party Mode любой может переключать треки и ставить паузу">
+            <button id="btnTogglePartyMode" class="text-slate-400 hover:text-white bg-dark-bg/80 border border-dark-border px-2.5 py-1 rounded-lg transition" title="В Party Mode любой слушатель может переключать треки">
               <i class="fa-solid fa-users mr-1"></i> <span id="partyModeLabel">DJ Режим (только хост)</span>
             </button>
           </div>
@@ -201,11 +200,12 @@
         <div class="flex flex-col sm:flex-row items-center justify-center gap-8 my-4 relative z-10">
           <!-- Vinyl Disc -->
           <div class="relative group">
-            <div id="vinylDisc" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full vinyl-grooves shadow-2xl border-4 border-slate-900 flex items-center justify-center animate-spin-slow paused-spin transition-transform duration-500">
-              <!-- Disc Center Label -->
-              <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-brand-600 via-brand-neon to-brand-accent p-1 shadow-inner flex items-center justify-center">
-                <div class="w-full h-full rounded-full bg-dark-bg flex items-center justify-center border-2 border-white/20">
-                  <div class="w-5 h-5 rounded-full bg-slate-200 border-4 border-dark-bg"></div>
+            <div id="vinylDisc" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full vinyl-grooves shadow-2xl border-4 border-slate-900 flex items-center justify-center animate-spin-slow paused-spin transition-transform duration-500 relative overflow-hidden">
+              <!-- Disc Center Label with Artwork -->
+              <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-brand-600 via-brand-neon to-brand-accent p-1 shadow-inner flex items-center justify-center overflow-hidden">
+                <div class="w-full h-full rounded-full bg-dark-bg flex items-center justify-center border-2 border-white/20 overflow-hidden relative">
+                  <img id="vinylCoverImg" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80" alt="Cover" class="w-full h-full object-cover">
+                  <div class="w-5 h-5 rounded-full bg-slate-200 border-4 border-dark-bg absolute inset-0 m-auto z-10"></div>
                 </div>
               </div>
             </div>
@@ -215,9 +215,25 @@
 
           <!-- Track Info & Visualizer Canvas -->
           <div class="flex-1 text-center sm:text-left w-full">
-            <span id="genreTag" class="text-[11px] font-bold uppercase tracking-wider text-brand-accent bg-brand-accent/10 px-2.5 py-0.5 rounded-full inline-block mb-2">Synthwave / Chill</span>
-            <h2 id="currentTrackTitle" class="text-xl sm:text-2xl font-extrabold text-white truncate max-w-sm mb-1">Night City Drive</h2>
-            <p id="currentTrackArtist" class="text-sm font-medium text-slate-400 mb-4">SoundHelix Beats</p>
+            <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start mb-2">
+              <span id="genreTag" class="text-[11px] font-bold uppercase tracking-wider text-brand-accent bg-brand-accent/10 px-2.5 py-0.5 rounded-full inline-block">Chill Synthwave</span>
+              <span id="platformBadge" class="hidden text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-full items-center space-x-1"></span>
+            </div>
+
+            <h2 id="currentTrackTitle" class="text-xl sm:text-2xl font-extrabold text-white truncate max-w-sm mb-1">SoundHelix Dream Flight</h2>
+            <p id="currentTrackArtist" class="text-sm font-medium text-slate-400 mb-2">Helix Sound Lab</p>
+
+            <!-- External Music Provider Links -->
+            <div id="sourceLinksContainer" class="hidden flex items-center space-x-3 mb-3 justify-center sm:justify-start">
+              <a id="btnOpenInApple" href="#" target="_blank" rel="noopener noreferrer" class="text-xs text-slate-300 hover:text-white bg-white/10 hover:bg-white/15 px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1.5 border border-white/15">
+                <i class="fa-brands fa-apple text-sm"></i>
+                <span>Apple Music</span>
+              </a>
+              <a id="btnOpenInYandex" href="#" target="_blank" rel="noopener noreferrer" class="text-xs text-red-300 hover:text-white bg-red-600/20 hover:bg-red-600/30 px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1.5 border border-red-500/30">
+                <i class="fa-brands fa-yandex text-sm text-red-500"></i>
+                <span>Яндекс Музыка</span>
+              </a>
+            </div>
 
             <!-- Audio Wave Canvas Visualizer -->
             <div class="w-full h-14 bg-dark-bg/90 rounded-xl border border-dark-border/80 p-2 overflow-hidden flex items-center">
@@ -242,7 +258,6 @@
           </div>
         </div>
 
-        <!-- Player Controls Bar -->
         <div class="mt-6 pt-4 border-t border-dark-border/60 flex flex-wrap items-center justify-between gap-4 relative z-10">
           
           <!-- Prev / Play / Next / Stop buttons -->
@@ -280,7 +295,7 @@
             </button>
             <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.85" class="w-24 h-1.5 rounded-lg cursor-pointer">
             
-            <!-- Claim DJ Button (if someone else is DJ) -->
+            <!-- Claim DJ Button -->
             <button id="btnClaimDJ" class="hidden text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2.5 py-1.5 rounded-xl transition">
               <i class="fa-solid fa-hand mr-1"></i> Стать DJ
             </button>
@@ -307,11 +322,11 @@
       <!-- Instructions & How It Works -->
       <div class="bg-dark-card/60 border border-dark-border rounded-2xl p-4 text-xs text-slate-400 flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 text-brand-accent flex items-center justify-center shrink-0">
-          <i class="fa-solid fa-lightbulb"></i>
+          <i class="fa-solid fa-tower-broadcast"></i>
         </div>
         <div>
           <span class="text-white font-medium">Как работает синхронизация:</span>
-          Отправь ссылку друзьям. При любом твоем действии (плей, пауза, перемотка в любую секунду или смена песни) у всех участников трек встает на ту же позицию в реальном времени!
+          Отправьте ссылку другу через кнопку <strong>«Поделиться ссылкой»</strong>. Любое действие DJ (пауза, перемотка, выбор трека) мгновенно ретранслируется всем подключенным слушателям через WebRTC P2P соединение.
         </div>
       </div>
     </section>
@@ -320,18 +335,26 @@
     <section class="lg:col-span-5 flex flex-col space-y-6">
       
       <!-- Playlist Card -->
-      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[340px]">
+      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[360px]">
         <div class="flex items-center justify-between pb-3 border-b border-dark-border">
           <div class="flex items-center space-x-2">
             <i class="fa-solid fa-list-music text-brand-accent"></i>
             <h3 class="font-bold text-white text-sm">Плейлист комнаты</h3>
             <span id="tracksBadgeCount" class="text-xs bg-dark-bg text-slate-400 px-2 py-0.5 rounded-md border border-dark-border">4 трека</span>
           </div>
-          <!-- Add custom audio button -->
-          <button id="btnOpenAddTrackModal" class="text-xs text-brand-accent hover:text-white bg-brand-500/10 hover:bg-brand-500/20 border border-brand-accent/20 px-2.5 py-1 rounded-lg transition flex items-center space-x-1">
-            <i class="fa-solid fa-plus text-[10px]"></i>
-            <span>Добавить трек</span>
-          </button>
+
+          <!-- Add action buttons -->
+          <div class="flex items-center space-x-1.5">
+            <button id="btnOpenStreamImportModal" class="text-xs text-brand-accent hover:text-white bg-brand-accent/10 hover:bg-brand-accent/20 border border-brand-accent/30 px-2 py-1 rounded-lg transition flex items-center space-x-1">
+              <i class="fa-brands fa-yandex text-[11px] text-red-400"></i>
+              <i class="fa-brands fa-apple text-[11px]"></i>
+              <span class="font-semibold">Поиск / Ссылка</span>
+            </button>
+            <button id="btnOpenAddTrackModal" class="text-xs text-slate-300 hover:text-white bg-dark-bg hover:bg-dark-hover border border-dark-border px-2 py-1 rounded-lg transition flex items-center space-x-1">
+              <i class="fa-solid fa-plus text-[10px]"></i>
+              <span>Свой файл</span>
+            </button>
+          </div>
         </div>
 
         <!-- Tracks List Container -->
@@ -340,14 +363,14 @@
         </div>
       </div>
 
-      <!-- Live Room Chat & Reactions Card -->
-      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[350px]">
+      <!-- Live Room Chat Card -->
+      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[330px]">
         <div class="flex items-center justify-between pb-3 border-b border-dark-border">
           <div class="flex items-center space-x-2">
             <i class="fa-solid fa-comments text-brand-500"></i>
             <h3 class="font-bold text-white text-sm">Чат комнаты</h3>
           </div>
-          <span class="text-[11px] text-slate-400">Живое общение</span>
+          <span class="text-[11px] text-slate-400">P2P Чат</span>
         </div>
 
         <!-- Messages stream -->
@@ -367,7 +390,62 @@
 
   </main>
 
-  <!-- MODAL: Add Custom Track -->
+  <!-- MODAL: Smart Music Importer (Apple Music & Yandex Music) -->
+  <div id="smartMusicModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-dark-card border border-dark-border rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-dark-border pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-accent flex items-center justify-center text-white text-sm">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">Импорт Apple / Яндекс Музыка</h3>
+            <p class="text-[11px] text-slate-400">Вставьте ссылку на трек или найдите песню по названию</p>
+          </div>
+        </div>
+        <button id="btnCloseSmartMusicModal" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Search / Link Input Form -->
+      <form id="smartMusicSearchForm" class="space-y-3">
+        <div class="relative">
+          <input type="text" id="inputSmartQuery" placeholder="Ссылка на трек или название (например: Miyagi, The Weeknd, Phonk)" required class="w-full bg-dark-bg border border-dark-border rounded-2xl pl-10 pr-24 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
+          <div class="absolute left-3.5 top-3.5 text-slate-500 text-sm">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+          <button type="submit" class="absolute right-2 top-2 px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs transition flex items-center space-x-1.5 shadow-md">
+            <i id="searchBtnSpinner" class="fa-solid fa-circle-notch animate-spin hidden text-xs"></i>
+            <span>Найти</span>
+          </button>
+        </div>
+
+        <!-- Quick suggestion chips -->
+        <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+          <span class="text-slate-500 mr-1">Быстрый поиск:</span>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Miyagi">#Miyagi</button>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="The Weeknd Blinding Lights">#The Weeknd</button>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Daft Punk">#Daft Punk</button>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Cyberpunk Synthwave">#Synthwave</button>
+        </div>
+      </form>
+
+      <!-- Results list container -->
+      <div id="smartResultsContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[220px] max-h-[340px]">
+        <div class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400 text-xs">
+          <i class="fa-solid fa-music text-3xl mb-2 text-slate-600"></i>
+          <p>Вставьте ссылку из Apple Music или Яндекс Музыки,<br>либо введите имя исполнителя или название песни.</p>
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-dark-border flex justify-end">
+        <button type="button" id="btnCloseSmartMusicModal2" class="px-4 py-2 rounded-xl text-xs text-slate-300 hover:bg-dark-hover transition">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Custom Track (Direct MP3 or Local File) -->
   <div id="addTrackModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-dark-card border border-dark-border rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between">
@@ -379,7 +457,7 @@
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
-      <p class="text-xs text-slate-400">Введите прямую ссылку на аудиофайл (mp3, ogg, wav) для воспроизведения в комнате.</p>
+      <p class="text-xs text-slate-400">Выберите файл с устройства или введите прямую ссылку на аудиофайл (mp3, wav).</p>
 
       <form id="formAddTrack" class="space-y-3">
         <!-- Local File Upload Option -->
@@ -421,7 +499,7 @@
     </div>
   </div>
 
-  <!-- MODAL: Change / Join Room -->
+  <!-- MODAL: Change Room -->
   <div id="roomModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-dark-card border border-dark-border rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between">
@@ -433,7 +511,7 @@
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
-      <p class="text-xs text-slate-400">Введите название или код комнаты, чтобы слушать музыку с друзьями:</p>
+      <p class="text-xs text-slate-400">Введите название комнаты, чтобы слушать музыку с друзьями:</p>
 
       <div class="space-y-3">
         <input type="text" id="inputNewRoomId" placeholder="Например: chill-vibe" class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
@@ -466,7 +544,7 @@
   <audio id="mainAudioElement" preload="auto" crossorigin="anonymous"></audio>
 
   <script>
-    // Curated high quality reliable Creative Commons MP3 tracks with zero CORS issues
+    // Curated high quality reliable Creative Commons MP3 tracks
     const DEFAULT_TRACKS = [
       {
         id: 'track-1',
@@ -538,12 +616,13 @@
       tracks: [...DEFAULT_TRACKS]
     };
 
+    // Audio context & Visualizer variables
     let audioContext = null;
     let analyser = null;
     let dataArray = null;
     let isVisualizerSetup = false;
 
-    // UI Elements
+    // DOM References
     const audio = document.getElementById('mainAudioElement');
     const btnPlayPause = document.getElementById('btnPlayPause');
     const playPauseIcon = document.getElementById('playPauseIcon');
@@ -595,6 +674,21 @@
     const inputSmartQuery = document.getElementById('inputSmartQuery');
     const smartResultsContainer = document.getElementById('smartResultsContainer');
     const searchBtnSpinner = document.getElementById('searchBtnSpinner');
+
+    function getHostPeerId(roomId) {
+      return `soundshare-v2-room-${roomId}`;
+    }
+
+    function initWebRTCNetworking(roomId) {
+      if (peer) {
+        try { peer.destroy(); } catch (e) {}
+      }
+
+      guestConnections = [];
+      hostConnection = null;
+      currentRoomDisplay.textContent = roomId;
+      updateP2PStatus('connecting', 'Подключение к сети...');
+
       const hostId = getHostPeerId(roomId);
 
       // Attempt 1: Try to bind as Host (DJ)
@@ -610,7 +704,6 @@
         });
 
         peer.on('open', (id) => {
-          // Successfully registered as Host
           isHost = true;
           roomState.hostName = myNickname;
           updateP2PStatus('host', 'Вы DJ (Хост комнаты)');
@@ -625,7 +718,7 @@
 
         peer.on('error', (err) => {
           if (err.type === 'unavailable-id') {
-            // The room already has an active Host, so we connect as Guest
+            // Room already has host, connect as Guest
             initAsGuest(roomId, hostId);
           } else {
             console.warn('Peer error:', err);
@@ -643,7 +736,6 @@
       isHost = false;
       updateP2PStatus('connecting', 'Подключение к DJ комнаты...');
 
-      // Connect as an anonymous guest
       peer = new Peer({
         debug: 1,
         config: {
@@ -663,7 +755,6 @@
           updateRoleUI();
           addLocalChatMessage('Система', `Подключено к DJ комнаты #${roomId}! Музыка синхронизирована.`, false);
 
-          // Greet the host
           conn.send({
             type: 'HELLO',
             nickname: myNickname
@@ -692,7 +783,6 @@
       updateListenerCount();
 
       conn.on('open', () => {
-        // Send complete room state to newcomer immediately
         conn.send({
           type: 'SYNC_STATE',
           state: {
@@ -709,19 +799,16 @@
           showToast(`${data.nickname || 'Новый слушатель'} присоединился к эфиру! 🎧`, 'info');
           addLocalChatMessage('Система', `${data.nickname || 'Новый слушатель'} вошел в комнату`, false);
         } else if (data.type === 'REQUEST_CONTROL') {
-          // Guest performed action in Party Mode
           if (roomState.partyMode) {
             broadcastPlaybackState(data.actionData);
           }
         } else if (data.type === 'CHAT') {
-          // Broadcast chat to all other guests and self
           addLocalChatMessage(data.sender, data.text, false);
           broadcastToAllGuests(data, conn);
         } else if (data.type === 'REACTION') {
           spawnFloatingEmoji(data.emoji);
           broadcastToAllGuests(data, conn);
         } else if (data.type === 'CLAIM_DJ') {
-          // Transfer host
           roomState.hostName = data.nickname;
           showToast(`${data.nickname} стал новым DJ комнаты!`, 'info');
           broadcastPlaybackState({ hostName: data.nickname });
@@ -755,18 +842,13 @@
         }
 
         updateRoleUI();
+        updateUI();
 
         // Update track source if needed
         const currentTrack = roomState.tracks[roomState.currentTrackIndex] || roomState.tracks[0];
         if (currentTrack && audio.src !== currentTrack.url) {
           audio.src = currentTrack.url;
           audio.load();
-        }
-
-        if (currentTrack) {
-          currentTrackTitle.textContent = currentTrack.title;
-          currentTrackArtist.textContent = currentTrack.artist;
-          genreTag.textContent = currentTrack.genre || 'Музыка';
         }
 
         // Calculate synchronized playback position with latency compensation
@@ -809,7 +891,6 @@
         return;
       }
 
-      // Update local state
       roomState = {
         ...roomState,
         ...actionData,
@@ -821,13 +902,11 @@
       updateUI();
 
       if (isHost) {
-        // Broadcast directly to all listeners
         broadcastToAllGuests({
           type: 'SYNC_STATE',
           state: roomState
         });
       } else if (hostConnection && hostConnection.open) {
-        // Send request to host to execute action
         hostConnection.send({
           type: 'REQUEST_CONTROL',
           actionData: actionData
@@ -922,7 +1001,7 @@
           platformBadge.innerHTML = '<i class="fa-brands fa-apple mr-1"></i> Apple Music';
         } else if (currentTrack.platform === 'yandex' || currentTrack.yandexUrl) {
           platformBadge.className = "text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-full inline-flex items-center space-x-1 bg-red-500/15 text-red-400 border border-red-500/30";
-          platformBadge.innerHTML = '<i class="fa-brands fa-yandex mr-1"></i> Яндекс.Музыка';
+          platformBadge.innerHTML = '<i class="fa-brands fa-yandex mr-1"></i> Яндекс Музыка';
         } else {
           platformBadge.className = "hidden";
         }
@@ -1044,12 +1123,10 @@
         const file = e.target.files[0];
         if (!file) return;
 
-        // Auto-fill track details from file name
         const cleanName = file.name.replace(/\.[^/.]+$/, "");
         document.getElementById('inputTrackTitle').value = cleanName;
         document.getElementById('inputTrackArtist').value = myNickname;
 
-        // Create instant object URL for playback
         const objectUrl = URL.createObjectURL(file);
         document.getElementById('inputTrackUrl').value = objectUrl;
         showToast(`Файл "${file.name}" выбран для добавления!`, 'info');
@@ -1101,7 +1178,6 @@
 
         const coverSrc = track.artwork || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop&q=80';
 
-        // Platform indicator tag
         let platformIcon = '';
         if (track.platform === 'apple') {
           platformIcon = '<span class="text-[10px] text-slate-300 bg-black/60 px-1.5 py-0.5 rounded border border-white/20"><i class="fa-brands fa-apple mr-0.5"></i>Apple</span>';
@@ -1140,7 +1216,7 @@
         playlistContainer.appendChild(item);
       });
     }
-    // Smart Importer Event Listeners & Catalog Resolver
+
     if (btnOpenStreamImportModal) {
       btnOpenStreamImportModal.addEventListener('click', () => {
         if (!canControl()) {
@@ -1159,7 +1235,6 @@
       btnCloseSmartMusicModal2.addEventListener('click', () => smartMusicModal.classList.add('hidden'));
     }
 
-    // Quick suggestion chips
     document.querySelectorAll('.smart-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         inputSmartQuery.value = chip.dataset.query;
@@ -1167,7 +1242,6 @@
       });
     });
 
-    // Handle Search / Link parsing
     smartMusicSearchForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const rawQuery = inputSmartQuery.value.trim();
@@ -1190,7 +1264,7 @@
           <div class="text-center p-6 text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-2xl">
             <i class="fa-solid fa-triangle-exclamation text-lg mb-2"></i>
             <p class="font-semibold">Не удалось найти поток для этой ссылки</p>
-            <p class="text-[11px] text-slate-400 mt-1">Попробуйте ввести название трека текстом (например: "Miyagi Captain" или "The Weeknd")</p>
+            <p class="text-[11px] text-slate-400 mt-1">Попробуйте ввести название трека текстом (например: "Miyagi" или "The Weeknd")</p>
           </div>
         `;
       } finally {
@@ -1203,7 +1277,7 @@
       let detectedPlatform = 'auto';
       let appleTrackId = null;
 
-      // 1. Check if user pasted an Apple Music link
+      // Check for Apple Music link
       if (query.includes('music.apple.com')) {
         detectedPlatform = 'apple';
         const matchTrack = query.match(/[?&]i=(\d+)/);
@@ -1215,15 +1289,13 @@
         }
       }
 
-      // 2. Check if user pasted a Yandex Music link
+      // Check for Yandex Music link
       if (query.includes('music.yandex.ru')) {
         detectedPlatform = 'yandex';
-        // Extract track ID from /track/XXXXX or /album/XXXX/track/YYYY
         const matchYTrack = query.match(/track\/(\d+)/);
         if (matchYTrack && matchYTrack[1]) {
           const trackId = matchYTrack[1];
           try {
-            // Fetch track metadata via public CORS-proxy of Yandex Music handler
             const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://music.yandex.ru/handlers/track.jsx?track=' + trackId)}`;
             const res = await fetch(proxyUrl);
             if (res.ok) {
@@ -1240,7 +1312,6 @@
         }
       }
 
-      // 3. Query the catalog API for playable synchronized audio stream & high-res artwork
       let apiUrl = '';
       if (appleTrackId) {
         apiUrl = `https://itunes.apple.com/lookup?id=${appleTrackId}&entity=song`;
@@ -1270,7 +1341,6 @@
       smartResultsContainer.innerHTML = '';
 
       results.forEach(item => {
-        // High-res album artwork (replacing 100x100 with 600x600)
         const hdArtwork = item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80';
         const appleTrackUrl = item.trackViewUrl || `https://music.apple.com/ru/search?term=${encodeURIComponent(item.artistName + ' ' + item.trackName)}`;
         const yandexTrackUrl = `https://music.yandex.ru/search?text=${encodeURIComponent(item.artistName + ' ' + item.trackName)}`;
@@ -1301,7 +1371,6 @@
           </div>
 
           <div class="flex items-center space-x-2 shrink-0">
-            <!-- Add to room playlist button -->
             <button class="btn-add-smart-track px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-brand-600/30 active:scale-95 transition">
               <i class="fa-solid fa-plus text-[10px]"></i>
               <span>В эфир</span>
@@ -1337,7 +1406,6 @@
       const updatedTracks = [...roomState.tracks, trackObj];
       const newTrackIndex = updatedTracks.length - 1;
 
-      // Broadcast new track to all guests
       broadcastPlaybackState({
         tracks: updatedTracks
       });
@@ -1346,9 +1414,27 @@
       showToast(`Трек "${trackObj.title}" добавлен в плейлист!`, 'success');
       smartMusicModal.classList.add('hidden');
 
-      // Auto switch to newly added track
       switchTrack(newTrackIndex);
     }
+
+    function initVisualizer() {
+      if (isVisualizerSetup) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        audioContext = new AudioCtx();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 64;
+        const source = audioContext.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        isVisualizerSetup = true;
+        drawVisualizer();
+      } catch (err) {
+        // Fallback to beautiful simulated wave if CORS blocks Web Audio nodes
+        console.log("Using simulated visualizer fallback:", err.message);
+      }
     }
 
     function drawVisualizer() {
@@ -1379,6 +1465,8 @@
 
     function drawSimulatedVisualizer() {
       requestAnimationFrame(drawSimulatedVisualizer);
+      if (isVisualizerSetup && analyser) return;
+
       const width = visualizerCanvas.width = visualizerCanvas.parentElement.clientWidth;
       const height = visualizerCanvas.height = visualizerCanvas.parentElement.clientHeight;
 
@@ -1466,11 +1554,11 @@
       chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
     }
 
-    // Share Room Link
+    // Share Room Link Handler
     btnShareRoom.addEventListener('click', () => {
       const roomUrl = `${window.location.origin}${window.location.pathname}#room=${currentRoomId}`;
       copyToClipboard(roomUrl);
-      showToast("Ссылка на комнату скопирована! Отправь другу 🎧", "success");
+      showToast("Ссылка на комнату скопирована! Отправьте её друзьям 🎧", "success");
     });
 
     // Room Switcher
@@ -1589,7 +1677,6 @@
     }
 
     window.addEventListener('load', () => {
-      // Initialize first track
       audio.src = roomState.tracks[0].url;
       renderPlaylist();
       drawSimulatedVisualizer();
