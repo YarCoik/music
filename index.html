@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SoundShare — Совместное прослушивание полных треков</title>
+  <title>SoundShare — Совместное прослушивание музыки</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
@@ -110,11 +110,11 @@
           <span class="font-black text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-accent bg-clip-text text-transparent">SoundShare</span>
           <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">Live Sync</span>
         </div>
-        <p class="text-xs text-slate-400 hidden sm:block">Синхронное прослушивание полных треков с друзьями</p>
+        <p class="text-xs text-slate-400 hidden sm:block">Синхронное прослушивание музыки с друзьями</p>
       </div>
     </div>
 
-    <!-- Индикаторы комнаты, статуса сети и кнопка «Поделиться» -->
+    <!-- Индикаторы комнаты, статуса сети и кнопки действий -->
     <div class="flex items-center flex-wrap gap-2 sm:gap-3">
       <div class="flex items-center bg-dark-bg/90 border border-dark-border rounded-xl px-3 py-1.5 text-xs">
         <span class="text-slate-400 mr-1.5"><i class="fa-solid fa-hashtag text-brand-accent mr-1"></i>Комната:</span>
@@ -131,11 +131,19 @@
         <span id="listenerCountText">1 в сети</span>
       </div>
 
-      <button id="btnShareRoom" type="button" class="flex items-center space-x-2 bg-gradient-to-r from-brand-600 via-brand-500 to-brand-accent hover:brightness-110 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition shadow-lg shadow-brand-600/30 active:scale-95 cursor-pointer">
-        <i class="fa-solid fa-link"></i>
-        <span>Скопировать ссылку для друга</span>
+      <!-- Кнопка Истории комнат -->
+      <button id="btnOpenHistoryModal" type="button" class="bg-dark-hover hover:bg-slate-800 text-slate-300 hover:text-white px-3 py-2 rounded-xl text-xs border border-dark-border transition flex items-center space-x-1.5" title="История посещенных комнат">
+        <i class="fa-solid fa-clock-rotate-left text-brand-accent"></i>
+        <span class="hidden sm:inline">История</span>
       </button>
 
+      <!-- Скопировать ссылку -->
+      <button id="btnShareRoom" type="button" class="flex items-center space-x-2 bg-gradient-to-r from-brand-600 via-brand-500 to-brand-accent hover:brightness-110 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition shadow-lg shadow-brand-600/30 active:scale-95 cursor-pointer">
+        <i class="fa-solid fa-link"></i>
+        <span>Поделиться</span>
+      </button>
+
+      <!-- Новая комната -->
       <button id="btnNewRoom" type="button" class="bg-dark-hover hover:bg-slate-800 text-slate-300 hover:text-white px-3 py-2 rounded-xl text-xs border border-dark-border transition" title="Создать новую комнату">
         <i class="fa-solid fa-plus mr-1"></i> Новая
       </button>
@@ -261,7 +269,7 @@
           </div>
         </div>
 
-        <!-- Кнопки управления -->
+        <!-- Кнопки управления плеером -->
         <div class="mt-6 pt-4 border-t border-dark-border/60 flex flex-wrap items-center justify-between gap-4 relative z-10">
           <div class="flex items-center space-x-3 mx-auto sm:mx-0" id="playbackButtonsGroup">
             <button id="btnPrevTrack" class="w-10 h-10 rounded-xl bg-dark-bg hover:bg-dark-hover border border-dark-border flex items-center justify-center text-slate-300 hover:text-white transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" title="Предыдущий трек">
@@ -311,24 +319,42 @@
 
     <!-- ПРАВАЯ КОЛОНКА: Плейлист и чат (5 колонок) -->
     <section class="lg:col-span-5 flex flex-col space-y-6">
-      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[390px]">
-        <div class="flex items-center justify-between pb-3 border-b border-dark-border">
+      
+      <!-- Плейлист комнаты -->
+      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[400px]">
+        <div class="flex items-center justify-between pb-3 border-b border-dark-border flex-wrap gap-2">
           <div class="flex items-center space-x-2">
             <i class="fa-solid fa-list-music text-brand-accent"></i>
-            <h3 class="font-bold text-white text-sm">Плейлист комнаты</h3>
-            <span id="tracksBadgeCount" class="text-xs bg-dark-bg text-slate-400 px-2 py-0.5 rounded-md border border-dark-border">3 трека</span>
+            <h3 class="font-bold text-white text-sm">Плейлист</h3>
+            <span id="tracksBadgeCount" class="text-xs bg-dark-bg text-slate-400 px-2 py-0.5 rounded-md border border-dark-border">3</span>
           </div>
 
-          <button id="btnOpenSmartModal" class="text-xs text-white bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 px-3 py-1.5 rounded-xl transition flex items-center space-x-1.5 font-bold shadow-md shadow-brand-600/30">
-            <i class="fa-solid fa-plus text-[10px]"></i>
-            <span>Добавить трек / ссылку</span>
-          </button>
+          <div class="flex items-center space-x-1.5 flex-wrap">
+            <!-- Сохранение текущего плейлиста -->
+            <button id="btnSaveCurrentPlaylist" class="text-[11px] text-slate-300 hover:text-white bg-dark-bg hover:bg-dark-hover border border-dark-border px-2 py-1 rounded-lg transition" title="Сохранить этот плейлист в память">
+              <i class="fa-solid fa-bookmark text-amber-400 mr-1"></i> Сохранить
+            </button>
+            <!-- Открыть сохраненные -->
+            <button id="btnOpenSavedPlaylists" class="text-[11px] text-slate-300 hover:text-white bg-dark-bg hover:bg-dark-hover border border-dark-border px-2 py-1 rounded-lg transition" title="Мои сохраненные плейлисты">
+              <i class="fa-solid fa-folder text-brand-accent mr-1"></i> Плейлисты
+            </button>
+            <!-- Импорт списком / TXT -->
+            <button id="btnOpenBulkImportModal" class="text-[11px] text-brand-accent hover:text-white bg-brand-accent/10 hover:bg-brand-accent/20 border border-brand-accent/30 px-2 py-1 rounded-lg transition font-semibold" title="Массовый импорт из списка или .txt">
+              <i class="fa-solid fa-file-lines mr-1"></i> Списком / TXT
+            </button>
+            <!-- Поиск одиночного трека -->
+            <button id="btnOpenSmartModal" class="text-[11px] text-white bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 px-2.5 py-1 rounded-lg transition font-bold shadow-md shadow-brand-600/30">
+              <i class="fa-solid fa-plus mr-0.5"></i> Трек
+            </button>
+          </div>
         </div>
 
+        <!-- Контейнер со списком треков -->
         <div id="playlistContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 mt-3"></div>
       </div>
 
-      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[310px]">
+      <!-- Чат комнаты -->
+      <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[300px]">
         <div class="flex items-center justify-between pb-3 border-b border-dark-border">
           <div class="flex items-center space-x-2">
             <i class="fa-solid fa-comments text-brand-500"></i>
@@ -350,7 +376,7 @@
 
   </main>
 
-  <!-- МОДАЛКА: Поиск и добавление треков -->
+  <!-- МОДАЛКА 1: Одиночный поиск и добавление трека -->
   <div id="smartMusicModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-dark-card border border-dark-border rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-dark-border pb-3">
@@ -368,10 +394,9 @@
         </button>
       </div>
 
-      <!-- Форма поиска -->
       <form id="smartMusicSearchForm" class="space-y-3">
         <div class="relative">
-          <input type="text" id="inputSmartQuery" placeholder="Ссылка на трек или название (5opka Кто я такой)..." required class="w-full bg-dark-bg border border-dark-border rounded-2xl pl-10 pr-24 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
+          <input type="text" id="inputSmartQuery" placeholder="Ссылка на YouTube / трек или название (5opka Кто я такой)..." required class="w-full bg-dark-bg border border-dark-border rounded-2xl pl-10 pr-24 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
           <div class="absolute left-3.5 top-3.5 text-slate-500 text-sm">
             <i class="fa-solid fa-magnifying-glass"></i>
           </div>
@@ -393,10 +418,9 @@
           </button>
         </div>
 
-        <!-- Настройка своего Google YouTube API Key -->
         <div id="apiKeySettingsBox" class="hidden p-3 bg-brand-500/10 border border-brand-500/30 rounded-2xl space-y-2 text-xs">
           <p class="text-slate-300 text-[11px]">
-            Для 100% стабильного поиска без ограничений можно ввести бесплатный ключ из Google Cloud Console:
+            Вставьте ваш YouTube API Key (начинается на <code class="text-brand-accent">AIzaSy...</code>) для официального поиска без блокировок:
           </p>
           <div class="flex items-center gap-2">
             <input type="text" id="inputCustomApiKey" placeholder="AIzaSy..." class="flex-1 bg-dark-bg border border-dark-border rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500">
@@ -405,12 +429,10 @@
         </div>
       </form>
 
-      <!-- Подсказка о прямой ссылке -->
       <div class="p-2.5 rounded-xl bg-dark-bg/60 border border-dark-border/60 text-[11px] text-slate-400 flex items-center justify-between">
-        <span>💡 Подсказка: ссылка на YouTube из адресной строки добавляется моментально!</span>
+        <span>💡 Ссылка из браузера на любое видео YouTube добавляется моментально!</span>
       </div>
 
-      <!-- Контейнер результатов -->
       <div id="smartResultsContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[220px] max-h-[320px]">
         <div class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400 text-xs">
           <i class="fa-solid fa-music text-3xl mb-2 text-slate-600"></i>
@@ -420,6 +442,115 @@
 
       <div class="pt-2 border-t border-dark-border flex justify-end">
         <button type="button" id="btnCloseSmartMusicModal2" class="px-4 py-2 rounded-xl text-xs text-slate-300 hover:bg-dark-hover transition">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА 2: Массовый импорт (Яндекс / Apple / TXT файл) -->
+  <div id="bulkImportModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-dark-card border border-dark-border rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-dark-border pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-accent flex items-center justify-center text-white text-base shadow-md">
+            <i class="fa-solid fa-list-check"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">Импорт целого списка / TXT</h3>
+            <p class="text-[11px] text-slate-400">Вставьте список треков из Яндекс/Apple Музыки или выберите .txt файл</p>
+          </div>
+        </div>
+        <button id="btnCloseBulkImportModal" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 flex-1 flex flex-col">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-300 font-semibold">Вставьте список треков (по одному на строку):</span>
+          <label class="cursor-pointer text-xs text-brand-accent hover:underline flex items-center space-x-1">
+            <i class="fa-solid fa-file-arrow-up"></i>
+            <span>Загрузить .txt файл</span>
+            <input type="file" id="inputBulkTxtFile" accept=".txt,text/plain" class="hidden">
+          </label>
+        </div>
+
+        <textarea id="inputBulkTracksText" rows="7" placeholder="Michael Jackson - Billie Jean&#10;5opka - Кто я такой&#10;The Weeknd - Blinding Lights&#10;Queen - Bohemian Rhapsody" class="w-full flex-1 bg-dark-bg border border-dark-border rounded-2xl p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition font-mono leading-5"></textarea>
+
+        <!-- Прогресс импорта -->
+        <div id="bulkProgressContainer" class="hidden space-y-2 p-3 bg-brand-500/10 border border-brand-500/30 rounded-2xl text-xs">
+          <div class="flex items-center justify-between text-brand-accent font-semibold">
+            <span id="bulkProgressStatusText">Поиск и конвертация треков...</span>
+            <span id="bulkProgressPercentText">0%</span>
+          </div>
+          <div class="w-full bg-dark-bg h-2 rounded-full overflow-hidden">
+            <div id="bulkProgressBar" class="bg-gradient-to-r from-brand-600 to-brand-accent h-full w-0 transition-all duration-150"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <span class="text-[11px] text-slate-500">Формат: «Артист — Трек» или ссылка на YouTube</span>
+          <button id="btnStartBulkImport" type="button" class="px-5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs transition shadow-lg shadow-brand-600/30 flex items-center space-x-2">
+            <i id="bulkImportSpinner" class="fa-solid fa-circle-notch animate-spin hidden text-xs"></i>
+            <span id="bulkImportBtnText">Импортировать в плейлист</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-dark-border flex justify-end">
+        <button type="button" id="btnCloseBulkImportModal2" class="px-4 py-2 rounded-xl text-xs text-slate-300 hover:bg-dark-hover transition">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА 3: Сохраненные плейлисты (Библиотека) -->
+  <div id="savedPlaylistsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-dark-card border border-dark-border rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-dark-border pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-brand-accent flex items-center justify-center text-white text-base shadow-md">
+            <i class="fa-solid fa-folder-open"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">Библиотека сохраненных плейлистов</h3>
+            <p class="text-[11px] text-slate-400">Восстанавливайте свои сеты в любой новой комнате</p>
+          </div>
+        </div>
+        <button id="btnCloseSavedPlaylistsModal" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div id="savedPlaylistsContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 min-h-[220px]"></div>
+
+      <div class="pt-2 border-t border-dark-border flex justify-end">
+        <button type="button" id="btnCloseSavedPlaylistsModal2" class="px-4 py-2 rounded-xl text-xs text-slate-300 hover:bg-dark-hover transition">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА 4: История посещенных комнат -->
+  <div id="historyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-dark-card border border-dark-border rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-dark-border pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-cyan-500 flex items-center justify-center text-white text-base shadow-md">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-base">История комнат</h3>
+            <p class="text-[11px] text-slate-400">Комнаты, в которых вы недавно слушали музыку</p>
+          </div>
+        </div>
+        <button id="btnCloseHistoryModal" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div id="historyRoomsContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[200px]"></div>
+
+      <div class="pt-2 border-t border-dark-border flex justify-between items-center">
+        <button type="button" id="btnClearHistoryBtn" class="text-xs text-rose-400 hover:underline">Очистить историю</button>
+        <button type="button" id="btnCloseHistoryModal2" class="px-4 py-2 rounded-xl text-xs text-slate-300 hover:bg-dark-hover transition">Закрыть</button>
       </div>
     </div>
   </div>
@@ -523,7 +654,7 @@
     let isYtReady = false;
     let timeUpdateTimer = null;
 
-    // СЕТЬ
+    // СЕТЕВОЙ СЛОЙ
     const GLOBAL_BROKER_URL = 'wss://broker.hivemq.com:8884/mqtt';
     let mqttClient = null;
     let presenceMap = new Map();
@@ -580,6 +711,7 @@
     const vinylContainerWrapper = document.getElementById('vinylContainerWrapper');
     const videoContainerWrapper = document.getElementById('videoContainerWrapper');
 
+    // Модалка одиночного поиска
     const smartMusicModal = document.getElementById('smartMusicModal');
     const btnOpenSmartModal = document.getElementById('btnOpenSmartModal');
     const btnCloseSmartMusicModal = document.getElementById('btnCloseSmartMusicModal');
@@ -588,13 +720,450 @@
     const inputSmartQuery = document.getElementById('inputSmartQuery');
     const smartResultsContainer = document.getElementById('smartResultsContainer');
     const searchBtnSpinner = document.getElementById('searchBtnSpinner');
-
     const btnToggleApiKeyInput = document.getElementById('btnToggleApiKeyInput');
     const apiKeySettingsBox = document.getElementById('apiKeySettingsBox');
     const inputCustomApiKey = document.getElementById('inputCustomApiKey');
     const btnSaveCustomApiKey = document.getElementById('btnSaveCustomApiKey');
 
-    // Настройка API ключа
+    // Модалка массового импорта
+    const bulkImportModal = document.getElementById('bulkImportModal');
+    const btnOpenBulkImportModal = document.getElementById('btnOpenBulkImportModal');
+    const btnCloseBulkImportModal = document.getElementById('btnCloseBulkImportModal');
+    const btnCloseBulkImportModal2 = document.getElementById('btnCloseBulkImportModal2');
+    const inputBulkTracksText = document.getElementById('inputBulkTracksText');
+    const inputBulkTxtFile = document.getElementById('inputBulkTxtFile');
+    const btnStartBulkImport = document.getElementById('btnStartBulkImport');
+    const bulkImportSpinner = document.getElementById('bulkImportSpinner');
+    const bulkImportBtnText = document.getElementById('bulkImportBtnText');
+    const bulkProgressContainer = document.getElementById('bulkProgressContainer');
+    const bulkProgressBar = document.getElementById('bulkProgressBar');
+    const bulkProgressStatusText = document.getElementById('bulkProgressStatusText');
+    const bulkProgressPercentText = document.getElementById('bulkProgressPercentText');
+
+    // Модалка сохраненных плейлистов
+    const savedPlaylistsModal = document.getElementById('savedPlaylistsModal');
+    const btnOpenSavedPlaylists = document.getElementById('btnOpenSavedPlaylists');
+    const btnSaveCurrentPlaylist = document.getElementById('btnSaveCurrentPlaylist');
+    const btnCloseSavedPlaylistsModal = document.getElementById('btnCloseSavedPlaylistsModal');
+    const btnCloseSavedPlaylistsModal2 = document.getElementById('btnCloseSavedPlaylistsModal2');
+    const savedPlaylistsContainer = document.getElementById('savedPlaylistsContainer');
+
+    // Модалка истории комнат
+    const historyModal = document.getElementById('historyModal');
+    const btnOpenHistoryModal = document.getElementById('btnOpenHistoryModal');
+    const btnCloseHistoryModal = document.getElementById('btnCloseHistoryModal');
+    const btnCloseHistoryModal2 = document.getElementById('btnCloseHistoryModal2');
+    const historyRoomsContainer = document.getElementById('historyRoomsContainer');
+    const btnClearHistoryBtn = document.getElementById('btnClearHistoryBtn');
+
+    // ==========================================
+    // ИСТОРИЯ КОМНАТ В LOCALSTORAGE
+    // ==========================================
+    function recordRoomHistory(roomId, isHostRole) {
+      try {
+        let history = JSON.parse(localStorage.getItem('soundshare_room_history') || '[]');
+        history = history.filter(item => item.roomId !== roomId);
+        history.unshift({
+          roomId,
+          isHost: isHostRole,
+          visitedAt: Date.now()
+        });
+        if (history.length > 15) history = history.slice(0, 15);
+        localStorage.setItem('soundshare_room_history', JSON.stringify(history));
+      } catch (e) {}
+    }
+
+    function renderHistoryModal() {
+      const history = JSON.parse(localStorage.getItem('soundshare_room_history') || '[]');
+      historyRoomsContainer.innerHTML = '';
+
+      if (history.length === 0) {
+        historyRoomsContainer.innerHTML = `
+          <div class="text-center p-6 text-slate-500 text-xs">
+            <i class="fa-solid fa-clock-rotate-left text-2xl mb-2 text-slate-600"></i>
+            <p>Вы пока не посещали другие комнаты</p>
+          </div>
+        `;
+        return;
+      }
+
+      history.forEach(item => {
+        const isCurrent = item.roomId === currentRoomId;
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between p-3 rounded-2xl border transition ${
+          isCurrent 
+            ? 'bg-brand-500/15 border-brand-500/40 text-white' 
+            : 'bg-dark-bg/80 border-dark-border hover:border-brand-500/50 text-slate-300'
+        }`;
+
+        const timeStr = new Date(item.visitedAt).toLocaleDateString('ru-RU', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        row.innerHTML = `
+          <div class="flex items-center space-x-3 overflow-hidden">
+            <div class="w-8 h-8 rounded-xl bg-dark-bg flex items-center justify-center text-xs font-mono font-bold text-brand-accent shrink-0 border border-dark-border">
+              #
+            </div>
+            <div class="truncate">
+              <div class="flex items-center space-x-2">
+                <span class="font-bold text-xs text-white font-mono">${escapeHtml(item.roomId)}</span>
+                ${item.isHost ? '<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded font-semibold">DJ</span>' : ''}
+                ${isCurrent ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1 rounded font-semibold">Сейчас</span>' : ''}
+              </div>
+              <p class="text-[10px] text-slate-500 mt-0.5">${timeStr}</p>
+            </div>
+          </div>
+          ${!isCurrent ? `
+            <button class="btn-goto-room px-3 py-1.5 rounded-xl bg-dark-hover hover:bg-brand-600 hover:text-white text-slate-300 text-xs font-semibold transition shrink-0">
+              Войти
+            </button>
+          ` : ''}
+        `;
+
+        const btnGo = row.querySelector('.btn-goto-room');
+        if (btnGo) {
+          btnGo.addEventListener('click', () => {
+            window.location.hash = `room=${item.roomId}`;
+            window.location.reload();
+          });
+        }
+
+        historyRoomsContainer.appendChild(row);
+      });
+    }
+
+    btnOpenHistoryModal.addEventListener('click', () => {
+      renderHistoryModal();
+      historyModal.classList.remove('hidden');
+    });
+
+    btnCloseHistoryModal.addEventListener('click', () => historyModal.classList.add('hidden'));
+    btnCloseHistoryModal2.addEventListener('click', () => historyModal.classList.add('hidden'));
+    btnClearHistoryBtn.addEventListener('click', () => {
+      localStorage.removeItem('soundshare_room_history');
+      renderHistoryModal();
+      showToast("История комнат очищена", "info");
+    });
+
+    // ==========================================
+    // СОХРАНЕНИЕ И ВОССТАНОВЛЕНИЕ ПЛЕЙЛИСТОВ
+    // ==========================================
+    function getSavedPlaylists() {
+      try {
+        return JSON.parse(localStorage.getItem('soundshare_saved_playlists') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    btnSaveCurrentPlaylist.addEventListener('click', () => {
+      if (roomState.tracks.length === 0) {
+        showToast("Плейлист пуст, нечего сохранять", "warning");
+        return;
+      }
+      const defaultName = `Плейлист (${roomState.tracks.length} треков) — ${new Date().toLocaleDateString('ru-RU')}`;
+      const name = prompt("Введите название для сохранения плейлиста:", defaultName);
+      if (!name) return;
+
+      const list = getSavedPlaylists();
+      list.unshift({
+        id: 'pl_' + Date.now(),
+        name: name.trim(),
+        tracks: JSON.parse(JSON.stringify(roomState.tracks)),
+        savedAt: Date.now()
+      });
+      localStorage.setItem('soundshare_saved_playlists', JSON.stringify(list));
+      showToast(`Плейлист "${name}" сохранен в библиотеку!`, "success");
+    });
+
+    function renderSavedPlaylistsModal() {
+      const list = getSavedPlaylists();
+      savedPlaylistsContainer.innerHTML = '';
+
+      if (list.length === 0) {
+        savedPlaylistsContainer.innerHTML = `
+          <div class="text-center p-8 text-slate-500 text-xs">
+            <i class="fa-solid fa-folder-open text-3xl mb-2 text-slate-600"></i>
+            <p>У вас пока нет сохраненных плейлистов</p>
+            <p class="text-[11px] mt-1 text-slate-600">Нажмите «Сохранить» в шапке плейлиста, чтобы добавить текущий сет сюда</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.forEach(item => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between p-3 rounded-2xl bg-dark-bg/80 border border-dark-border hover:border-brand-500/40 transition group";
+
+        const dateStr = new Date(item.savedAt).toLocaleDateString('ru-RU', {
+          day: 'numeric',
+          month: 'short'
+        });
+
+        row.innerHTML = `
+          <div class="flex items-center space-x-3 overflow-hidden flex-1 mr-3">
+            <div class="w-10 h-10 rounded-xl bg-brand-500/10 border border-brand-500/30 text-brand-accent flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-music text-sm"></i>
+            </div>
+            <div class="truncate">
+              <h4 class="text-xs font-bold text-white truncate">${escapeHtml(item.name)}</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">${item.tracks.length} треков • Сохранен ${dateStr}</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 shrink-0">
+            <button class="btn-load-playlist px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs flex items-center space-x-1 shadow-md transition active:scale-95">
+              <i class="fa-solid fa-play text-[10px]"></i>
+              <span>Загрузить</span>
+            </button>
+            <button class="btn-delete-saved text-slate-500 hover:text-rose-400 p-2 text-xs transition" title="Удалить сохраненный плейлист">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        `;
+
+        row.querySelector('.btn-load-playlist').addEventListener('click', () => {
+          if (!canControl()) {
+            showToast("Только DJ может изменять плейлист комнаты.", "warning");
+            return;
+          }
+          roomState.tracks = JSON.parse(JSON.stringify(item.tracks));
+          roomState.currentTrackIndex = 0;
+          if (isYtReady && roomState.tracks[0]) {
+            ytPlayer.loadVideoById(roomState.tracks[0].youtubeId, 0);
+          }
+          renderPlaylist();
+          updateUI();
+          broadcastCurrentState();
+          savedPlaylistsModal.classList.add('hidden');
+          showToast(`Плейлист "${item.name}" загружен в комнату! 🎧`, "success");
+        });
+
+        row.querySelector('.btn-delete-saved').addEventListener('click', () => {
+          if (confirm(`Удалить плейлист "${item.name}" из сохраненных?`)) {
+            let current = getSavedPlaylists();
+            current = current.filter(p => p.id !== item.id);
+            localStorage.setItem('soundshare_saved_playlists', JSON.stringify(current));
+            renderSavedPlaylistsModal();
+            showToast("Плейлист удален", "info");
+          }
+        });
+
+        savedPlaylistsContainer.appendChild(row);
+      });
+    }
+
+    btnOpenSavedPlaylists.addEventListener('click', () => {
+      renderSavedPlaylistsModal();
+      savedPlaylistsModal.classList.remove('hidden');
+    });
+
+    btnCloseSavedPlaylistsModal.addEventListener('click', () => savedPlaylistsModal.classList.add('hidden'));
+    btnCloseSavedPlaylistsModal2.addEventListener('click', () => savedPlaylistsModal.classList.add('hidden'));
+
+    // ==========================================
+    // УДАЛЕНИЕ ТРЕКА ИЗ ПЛЕЙЛИСТА
+    // ==========================================
+    function deleteTrack(index) {
+      if (!canControl()) {
+        showToast("Только DJ может удалять треки.", "warning");
+        return;
+      }
+      if (roomState.tracks.length <= 1) {
+        showToast("Нельзя удалить единственный трек в плейлисте.", "warning");
+        return;
+      }
+
+      const isCurrent = index === roomState.currentTrackIndex;
+      const removedTrack = roomState.tracks.splice(index, 1)[0];
+
+      if (isCurrent) {
+        if (roomState.currentTrackIndex >= roomState.tracks.length) {
+          roomState.currentTrackIndex = 0;
+        }
+        if (isYtReady && roomState.tracks[roomState.currentTrackIndex]) {
+          ytPlayer.loadVideoById(roomState.tracks[roomState.currentTrackIndex].youtubeId, 0);
+        }
+      } else if (index < roomState.currentTrackIndex) {
+        roomState.currentTrackIndex--;
+      }
+
+      renderPlaylist();
+      updateUI();
+      broadcastCurrentState();
+      showToast(`Трек "${removedTrack.title}" удален из списка`, "info");
+    }
+
+    // ==========================================
+    // РЕНДЕР ПЛЕЙЛИСТА С КНОПКОЙ УДАЛЕНИЯ
+    // ==========================================
+    function renderPlaylist() {
+      playlistContainer.innerHTML = '';
+      tracksBadgeCount.textContent = `${roomState.tracks.length}`;
+
+      roomState.tracks.forEach((track, index) => {
+        const isCurrent = index === roomState.currentTrackIndex;
+        const item = document.createElement('div');
+        item.className = `group flex items-center justify-between p-2.5 rounded-2xl cursor-pointer transition border ${
+          isCurrent 
+            ? 'bg-brand-500/15 border-brand-500/40 text-white' 
+            : 'bg-dark-bg/60 border-dark-border/60 hover:bg-dark-hover text-slate-300'
+        }`;
+
+        item.innerHTML = `
+          <div class="flex items-center space-x-3 overflow-hidden flex-1 mr-2">
+            <div class="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-dark-border shadow-sm">
+              <img src="${track.artwork}" alt="cover" class="w-full h-full object-cover">
+              ${isCurrent ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><i class="fa-brands fa-youtube text-red-400 text-xs animate-pulse"></i></div>' : ''}
+            </div>
+            <div class="truncate">
+              <div class="flex items-center space-x-1.5 truncate">
+                <h4 class="text-xs font-bold truncate ${isCurrent ? 'text-brand-accent' : 'group-hover:text-white'}">${escapeHtml(track.title)}</h4>
+                <span class="text-[9px] text-red-400 bg-red-950/60 px-1 py-0.2 rounded border border-red-500/30">Full</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">${escapeHtml(track.artist)}</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 text-xs font-mono text-slate-400 shrink-0">
+            <span>${track.duration || ''}</span>
+            <button class="btn-delete-track text-slate-500 hover:text-rose-400 p-1.5 transition opacity-0 group-hover:opacity-100 ${!canControl() ? 'hidden' : ''}" title="Удалить трек из списка">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          </div>
+        `;
+
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-delete-track')) return;
+          switchTrack(index);
+        });
+
+        const btnDel = item.querySelector('.btn-delete-track');
+        if (btnDel) {
+          btnDel.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteTrack(index);
+          });
+        }
+
+        playlistContainer.appendChild(item);
+      });
+    }
+
+    // ==========================================
+    // МАССОВЫЙ ИМПОРТ ИЗ СПИСКА И .TXT ФАЙЛОВ
+    // ==========================================
+    btnOpenBulkImportModal.addEventListener('click', () => {
+      if (!canControl()) {
+        showToast("Только DJ может импортировать треки в комнату.", "warning");
+        return;
+      }
+      bulkProgressContainer.classList.add('hidden');
+      bulkImportModal.classList.remove('hidden');
+    });
+
+    btnCloseBulkImportModal.addEventListener('click', () => bulkImportModal.classList.add('hidden'));
+    btnCloseBulkImportModal2.addEventListener('click', () => bulkImportModal.classList.add('hidden'));
+
+    // Чтение .txt файла со списком треков
+    inputBulkTxtFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        inputBulkTracksText.value = event.target.result;
+        showToast(`Файл "${file.name}" загружен в окно импорта!`, "info");
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
+
+    btnStartBulkImport.addEventListener('click', async () => {
+      const raw = inputBulkTracksText.value.trim();
+      if (!raw) {
+        showToast("Вставьте хотя бы один трек в текстовое поле", "warning");
+        return;
+      }
+
+      // Разбиваем по строкам, чистим нумерацию "1. ", "01 - " и тайминги "3:45"
+      const lines = raw.split('\n')
+        .map(l => l.replace(/^\d+[\.\)\-\s]+/, '').replace(/\s*\d+:\d+\s*$/, '').trim())
+        .filter(l => l.length > 2);
+
+      if (lines.length === 0) {
+        showToast("Не удалось распознать названия треков", "warning");
+        return;
+      }
+
+      btnStartBulkImport.disabled = true;
+      bulkImportSpinner.classList.remove('hidden');
+      bulkImportBtnText.textContent = "Импорт...";
+      bulkProgressContainer.classList.remove('hidden');
+
+      const addedTracks = [];
+      let successCount = 0;
+
+      for (let i = 0; i < lines.length; i++) {
+        const query = lines[i];
+        const pct = Math.round(((i + 1) / lines.length) * 100);
+        bulkProgressBar.style.width = `${pct}%`;
+        bulkProgressPercentText.textContent = `${pct}%`;
+        bulkProgressStatusText.textContent = `Обработка (${i + 1}/${lines.length}): "${query.slice(0, 22)}..."`;
+
+        // Если строка является прямой ссылкой на YouTube
+        const directId = extractYouTubeId(query);
+        if (directId) {
+          addedTracks.push({
+            id: 'yt-' + directId,
+            title: query,
+            artist: 'YouTube Audio',
+            youtubeId: directId,
+            artwork: `https://i.ytimg.com/vi/${directId}/hqdefault.jpg`,
+            duration: 'Full'
+          });
+          successCount++;
+          continue;
+        }
+
+        // Поиск через YouTube API или быстрый поиск
+        try {
+          const results = await fetchFastestYouTube(query);
+          if (results && results.length > 0) {
+            addedTracks.push({
+              id: 'yt-' + results[0].youtubeId,
+              title: results[0].title,
+              artist: results[0].artist,
+              youtubeId: results[0].youtubeId,
+              artwork: results[0].artwork,
+              duration: results[0].duration
+            });
+            successCount++;
+          }
+        } catch (e) {
+          console.warn(`Не удалось найти трек: ${query}`, e);
+        }
+      }
+
+      btnStartBulkImport.disabled = false;
+      bulkImportSpinner.classList.add('hidden');
+      bulkImportBtnText.textContent = "Импортировать в плейлист";
+
+      if (addedTracks.length > 0) {
+        roomState.tracks = [...roomState.tracks, ...addedTracks];
+        renderPlaylist();
+        broadcastCurrentState();
+        showToast(`Импортировано: ${successCount} из ${lines.length} треков! 🚀`, "success");
+        setTimeout(() => {
+          bulkImportModal.classList.add('hidden');
+          inputBulkTracksText.value = '';
+        }, 1200);
+      } else {
+        showToast("Не удалось импортировать треки. Проверьте подключение или API ключ", "warning");
+      }
+    });
+
+    // Настройка YouTube API ключа
     btnToggleApiKeyInput.addEventListener('click', () => {
       apiKeySettingsBox.classList.toggle('hidden');
       inputCustomApiKey.value = localStorage.getItem('soundshare_yt_api_key') || '';
@@ -612,7 +1181,9 @@
       apiKeySettingsBox.classList.add('hidden');
     });
 
-    // YouTube API
+    // =======================================================
+    // YOUTUBE API & ПЛЕЕР
+    // =======================================================
     window.onYouTubeIframeAPIReady = function() {
       const cur = roomState.tracks[roomState.currentTrackIndex] || roomState.tracks[0];
       ytPlayer = new YT.Player('ytPlayer', {
@@ -758,6 +1329,7 @@
     function initNetwork() {
       currentRoomDisplay.textContent = currentRoomId;
       updateRoleUI();
+      recordRoomHistory(currentRoomId, isHost);
 
       try {
         if (window.BroadcastChannel) {
@@ -791,7 +1363,7 @@
         mqttClient.on('connect', () => {
           updateNetBadge(isHost ? 'host' : 'guest', isHost ? 'DJ Эфир активен' : 'В эфире (Синхронно)');
           
-          const roomTopic = `soundshare/v16/room/${currentRoomId}/#`;
+          const roomTopic = `soundshare/v18/room/${currentRoomId}/#`;
           mqttClient.subscribe(roomTopic, { qos: 0 }, (err) => {
             if (!err) {
               sendNetworkMessage('PRESENCE', { nickname: myNickname, isHost });
@@ -846,7 +1418,7 @@
       }
 
       if (mqttClient && mqttClient.connected) {
-        const topic = `soundshare/v16/room/${currentRoomId}/${type.toLowerCase()}`;
+        const topic = `soundshare/v18/room/${currentRoomId}/${type.toLowerCase()}`;
         mqttClient.publish(topic, JSON.stringify(msg));
       }
     }
@@ -1001,6 +1573,7 @@
           partyModeLabel.textContent = `Управляет DJ: ${roomState.hostName || 'Хост'}`;
         }
       }
+      renderPlaylist();
     }
 
     function enablePlaybackControls(enabled) {
@@ -1053,7 +1626,6 @@
         btnOpenInApple.href = `https://music.apple.com/ru/search?term=${encodeURIComponent(curTrack.artist + ' ' + curTrack.title)}`;
         btnOpenInYT.href = `https://www.youtube.com/watch?v=${curTrack.youtubeId}`;
       }
-      updateRoleUI();
     }
 
     function switchTrack(index) {
@@ -1147,44 +1719,6 @@
       broadcastCurrentState();
       showToast("Вы взяли на себя управление комнатой (DJ)!", "success");
     });
-
-    function renderPlaylist() {
-      playlistContainer.innerHTML = '';
-      tracksBadgeCount.textContent = `${roomState.tracks.length} треков`;
-
-      roomState.tracks.forEach((track, index) => {
-        const isCurrent = index === roomState.currentTrackIndex;
-        const item = document.createElement('div');
-        item.className = `group flex items-center justify-between p-2.5 rounded-2xl cursor-pointer transition border ${
-          isCurrent 
-            ? 'bg-brand-500/15 border-brand-500/40 text-white' 
-            : 'bg-dark-bg/60 border-dark-border/60 hover:bg-dark-hover text-slate-300'
-        }`;
-
-        item.innerHTML = `
-          <div class="flex items-center space-x-3 overflow-hidden">
-            <div class="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-dark-border shadow-sm">
-              <img src="${track.artwork}" alt="cover" class="w-full h-full object-cover">
-              ${isCurrent ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><i class="fa-brands fa-youtube text-red-400 text-xs animate-pulse"></i></div>' : ''}
-            </div>
-            <div class="truncate">
-              <div class="flex items-center space-x-1.5 truncate">
-                <h4 class="text-xs font-bold truncate ${isCurrent ? 'text-brand-accent' : 'group-hover:text-white'}">${escapeHtml(track.title)}</h4>
-                <span class="text-[9px] text-red-400 bg-red-950/60 px-1 py-0.2 rounded border border-red-500/30">Full</span>
-              </div>
-              <p class="text-[11px] text-slate-400 truncate">${escapeHtml(track.artist)}</p>
-            </div>
-          </div>
-          <div class="flex items-center space-x-2 text-xs font-mono text-slate-400 shrink-0">
-            <span>${track.duration || ''}</span>
-            <i class="fa-solid fa-play text-[10px] opacity-0 group-hover:opacity-100 transition text-brand-accent"></i>
-          </div>
-        `;
-
-        item.addEventListener('click', () => switchTrack(index));
-        playlistContainer.appendChild(item);
-      });
-    }
 
     // КОПИРОВАНИЕ ССЫЛКИ
     btnShareRoom.addEventListener('click', () => {
@@ -1286,10 +1820,9 @@
     }
 
     // =======================================================
-    // БЫСТРЫЙ ПОИСК YOUTUBE ЧЕРЕЗ PIPED API С ОТКРЫТЫМ CORS
+    // БЫСТРЫЙ ПОИСК YOUTUBE
     // =======================================================
     async function fetchFastestYouTube(query) {
-      // 1. Проверяем, задан ли собственный официальный ключ YouTube Data API
       const userApiKey = localStorage.getItem('soundshare_yt_api_key');
       if (userApiKey) {
         try {
@@ -1312,7 +1845,6 @@
         }
       }
 
-      // 2. Опрашиваем зеркала Piped API (у них заголовок Access-Control-Allow-Origin: * открыт по умолчанию)
       const pipedMirrors = [
         'https://api.piped.privacydev.net',
         'https://pipedapi.tokhmi.xyz',
@@ -1372,7 +1904,6 @@
         let finalQuery = rawInput;
         let directYtId = extractYouTubeId(rawInput);
 
-        // Мгновенно добавляем, если вставили прямую ссылку или ID
         if (directYtId) {
           addTrackToPlaylist({
             id: 'yt-' + directYtId,
@@ -1385,7 +1916,6 @@
           return;
         }
 
-        // Apple Music -> iTunes метаданные
         if (rawInput.includes('music.apple.com')) {
           const trackMatch = rawInput.match(/i=(\d+)/) || rawInput.match(/\/song\/[^\/]+\/(\d+)/);
           if (trackMatch && trackMatch[1]) {
@@ -1397,21 +1927,15 @@
               }
             } catch (err) {}
           }
-        } 
-        // Яндекс Музыка
-        else if (rawInput.includes('music.yandex.ru')) {
+        } else if (rawInput.includes('music.yandex.ru')) {
           const matchY = rawInput.match(/track\/(\d+)/);
           finalQuery = rawInput.replace(/https?:\/\/music\.yandex\.ru[^\s]+/gi, '').trim() || (matchY ? `track ${matchY[1]}` : rawInput);
         }
 
-        // Поиск по открытым API
         const results = await fetchFastestYouTube(finalQuery);
         renderSearchResults(results);
 
       } catch (err) {
-        console.warn("Piped зеркала не ответили, открываем резерв iTunes:", err);
-
-        // Резервный поиск метаданных через Apple iTunes
         try {
           const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(inputSmartQuery.value.trim())}&entity=song&limit=4`);
           const itunesJson = await itunesRes.json();
@@ -1424,8 +1948,8 @@
         smartResultsContainer.innerHTML = `
           <div class="text-center p-6 text-slate-400 text-xs bg-dark-bg/80 border border-dark-border rounded-2xl">
             <i class="fa-brands fa-youtube text-2xl mb-2 text-red-500"></i>
-            <p class="font-semibold text-white">Не удалось выполнить автопоиск</p>
-            <p class="text-[11px] mt-1 text-slate-400">Скопируйте ссылку на этот трек прямо с YouTube и вставьте сюда — она добавится за долю секунды!</p>
+            <p class="font-semibold text-white">Не удалось найти видео автоматически</p>
+            <p class="text-[11px] mt-1 text-slate-400">Вставьте прямую ссылку на видео с YouTube в поле выше — она запустится мгновенно!</p>
           </div>
         `;
       } finally {
@@ -1470,7 +1994,6 @@
       });
     }
 
-    // Резервный режим Apple: открывает YouTube в 1 клик и дает поле мгновенной вставки
     function renderiTunesFallback(results) {
       smartResultsContainer.innerHTML = `
         <div class="p-2 mb-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-200">
