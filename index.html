@@ -99,7 +99,7 @@
 
 <body class="bg-dark-bg text-slate-100 min-h-screen font-sans flex flex-col antialiased selection:bg-brand-500 selection:text-white relative overflow-x-hidden">
 
-  <!-- Шапка -->
+  <!-- Шапка приложения -->
   <header class="border-b border-dark-border/80 bg-dark-card/90 backdrop-blur-xl sticky top-0 z-40 px-4 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
     <div class="flex items-center space-x-3">
       <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-brand-accent flex items-center justify-center shadow-lg shadow-brand-600/30">
@@ -114,6 +114,7 @@
       </div>
     </div>
 
+    <!-- Индикаторы комнаты, статуса сети и кнопка «Поделиться» -->
     <div class="flex items-center flex-wrap gap-2 sm:gap-3">
       <div class="flex items-center bg-dark-bg/90 border border-dark-border rounded-xl px-3 py-1.5 text-xs">
         <span class="text-slate-400 mr-1.5"><i class="fa-solid fa-hashtag text-brand-accent mr-1"></i>Комната:</span>
@@ -141,7 +142,7 @@
     </div>
   </header>
 
-  <!-- Предупреждение о приглушенном старте -->
+  <!-- Индикатор режима Muted по умолчанию -->
   <div id="unmuteTipBanner" class="bg-gradient-to-r from-brand-600 via-brand-500 to-brand-accent text-white px-4 py-2.5 text-center text-xs sm:text-sm font-medium z-30 flex items-center justify-center space-x-3 shadow-md cursor-pointer transition">
     <i class="fa-solid fa-volume-xmark text-base text-amber-300 animate-pulse"></i>
     <span>Звук по умолчанию приглушен. <strong>Кликните сюда или сдвиньте громкость, чтобы включить!</strong></span>
@@ -150,7 +151,7 @@
 
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
     
-    <!-- ЛЕВАЯ СЕКЦИЯ: Плеер -->
+    <!-- ЛЕВАЯ КОЛОНКА: Сцена плеера (7 колонок) -->
     <section class="lg:col-span-7 flex flex-col space-y-6">
       <div class="bg-dark-card border border-dark-border rounded-3xl p-6 relative overflow-hidden shadow-2xl">
         <div class="absolute -top-24 -right-24 w-72 h-72 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -190,8 +191,8 @@
           <span class="text-[10px] bg-brand-accent/20 px-2 py-0.5 rounded-md font-mono">Live Sync</span>
         </div>
 
+        <!-- Винил / Видео -->
         <div class="flex flex-col sm:flex-row items-center justify-center gap-8 my-4 relative z-10">
-          <!-- Вертушка -->
           <div id="vinylContainerWrapper" class="relative group shrink-0">
             <div id="vinylDisc" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full vinyl-grooves shadow-2xl border-4 border-slate-900 flex items-center justify-center animate-spin-slow paused-spin transition-transform duration-500 relative overflow-hidden">
               <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-brand-600 via-brand-neon to-brand-accent p-1 shadow-inner flex items-center justify-center overflow-hidden">
@@ -204,12 +205,10 @@
             <div id="vinylGlow" class="absolute inset-0 rounded-full border border-brand-accent/40 pointer-events-none opacity-0 transition-opacity duration-300"></div>
           </div>
 
-          <!-- YouTube плеер -->
           <div id="videoContainerWrapper" class="hidden w-full max-w-[320px] aspect-video rounded-2xl overflow-hidden shadow-2xl border border-dark-border bg-black relative">
             <div id="ytPlayer" class="w-full h-full"></div>
           </div>
 
-          <!-- Инфо о треке -->
           <div class="flex-1 text-center sm:text-left w-full overflow-hidden">
             <div class="flex flex-wrap items-center gap-2 justify-center sm:justify-start mb-2">
               <span id="genreTag" class="text-[11px] font-bold uppercase tracking-wider text-brand-accent bg-brand-accent/10 px-2.5 py-0.5 rounded-full inline-block">Full Track</span>
@@ -310,10 +309,8 @@
       </div>
     </section>
 
-    <!-- ПРАВАЯ СЕКЦИЯ: Плейлист и чат -->
+    <!-- ПРАВАЯ КОЛОНКА: Плейлист и чат (5 колонок) -->
     <section class="lg:col-span-5 flex flex-col space-y-6">
-      
-      <!-- Плейлист -->
       <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[390px]">
         <div class="flex items-center justify-between pb-3 border-b border-dark-border">
           <div class="flex items-center space-x-2">
@@ -331,7 +328,6 @@
         <div id="playlistContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 mt-3"></div>
       </div>
 
-      <!-- Чат -->
       <div class="bg-dark-card border border-dark-border rounded-3xl p-5 shadow-xl flex flex-col h-[310px]">
         <div class="flex items-center justify-between pb-3 border-b border-dark-border">
           <div class="flex items-center space-x-2">
@@ -374,7 +370,7 @@
 
       <form id="smartMusicSearchForm" class="space-y-3">
         <div class="relative">
-          <input type="text" id="inputSmartQuery" placeholder="Ссылка на трек или название (Rag'n'Bone Man - Human)..." required class="w-full bg-dark-bg border border-dark-border rounded-2xl pl-10 pr-24 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
+          <input type="text" id="inputSmartQuery" placeholder="Ссылка на трек или название (5opka Кто я такой)..." required class="w-full bg-dark-bg border border-dark-border rounded-2xl pl-10 pr-24 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition">
           <div class="absolute left-3.5 top-3.5 text-slate-500 text-sm">
             <i class="fa-solid fa-magnifying-glass"></i>
           </div>
@@ -386,9 +382,9 @@
 
         <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
           <span class="text-slate-500 mr-1">Быстрый выбор:</span>
+          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="5opka Кто я такой">5opka</button>
           <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Rag'n'Bone Man Human">Rag'n'Bone Man</button>
           <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="Miyagi I Got Love">Miyagi I Got Love</button>
-          <button type="button" class="smart-chip bg-dark-bg border border-dark-border hover:border-brand-500/50 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg transition" data-query="The Weeknd Blinding Lights">The Weeknd</button>
         </div>
       </form>
 
@@ -447,7 +443,7 @@
       }
     ];
 
-    // УНИВЕРСАЛЬНЫЙ ПАРСЕР КОМНАТЫ: принимает #room=..., #room-..., #xyz и ?room=xyz
+    // УНИВЕРСАЛЬНЫЙ ПАРСЕР КОМНАТЫ
     function getSessionConfig() {
       const fullHash = (window.location.hash || '').replace(/^#/, '').trim();
       const urlParams = new URLSearchParams(window.location.search);
@@ -504,7 +500,7 @@
     let isYtReady = false;
     let timeUpdateTimer = null;
 
-    // СЕТЕВОЙ БРОКЕР
+    // СЕТЬ
     const GLOBAL_BROKER_URL = 'wss://broker.hivemq.com:8884/mqtt';
     let mqttClient = null;
     let presenceMap = new Map();
@@ -1175,6 +1171,7 @@
       window.location.reload();
     });
 
+    // Реакции и чат
     document.querySelectorAll('.reaction-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const emoji = btn.dataset.emoji;
@@ -1241,9 +1238,47 @@
       return match ? match[1] : null;
     }
 
-    // ==========================================
-    // НАДЕЖНЫЙ ПОИСК ТРЕКОВ
-    // ==========================================
+    // =======================================================
+    // СВЕРХБЫСТРЫЙ ПАРАЛЛЕЛЬНЫЙ ПОИСК YOUTUBE
+    // =======================================================
+    async function fetchFastestYouTube(query) {
+      const mirrors = [
+        'https://yewtu.be',
+        'https://iv.ggtyler.dev',
+        'https://invidious.protokolla.fi',
+        'https://invidious.private.coffee',
+        'https://inv.tux.pizza'
+      ];
+
+      const queryMirror = async (baseUrl) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3500);
+        try {
+          const res = await fetch(`${baseUrl}/api/v1/search?q=${encodeURIComponent(query)}&type=video`, {
+            signal: controller.signal
+          });
+          clearTimeout(timer);
+          if (!res.ok) throw new Error('Bad status');
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            return data.slice(0, 6).map(item => ({
+              title: item.title,
+              artist: item.author || 'YouTube',
+              youtubeId: item.videoId,
+              artwork: item.videoThumbnails?.[0]?.url || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
+              duration: formatTime(item.lengthSeconds || 200)
+            })).filter(t => Boolean(t.youtubeId));
+          }
+          throw new Error('Empty items');
+        } catch (err) {
+          clearTimeout(timer);
+          throw err;
+        }
+      };
+
+      return await Promise.any(mirrors.map(m => queryMirror(m)));
+    }
+
     smartMusicSearchForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const rawInput = inputSmartQuery.value.trim();
@@ -1253,7 +1288,7 @@
       smartResultsContainer.innerHTML = `
         <div class="flex flex-col items-center justify-center p-8 space-y-3">
           <i class="fa-solid fa-compact-disc text-3xl text-brand-accent animate-spin-slow"></i>
-          <span class="text-xs text-slate-400 font-medium">Поиск трека...</span>
+          <span class="text-xs text-slate-400 font-medium">Быстрый поиск трека...</span>
         </div>
       `;
 
@@ -1261,11 +1296,11 @@
         let finalQuery = rawInput;
         let directYtId = extractYouTubeId(rawInput);
 
-        // 1. Прямая ссылка на YouTube
+        // Прямой ввод ссылки или ID видео
         if (directYtId) {
           addTrackToPlaylist({
             id: 'yt-' + directYtId,
-            title: 'YouTube Track',
+            title: 'YouTube Трек',
             artist: 'YouTube Video',
             youtubeId: directYtId,
             artwork: `https://i.ytimg.com/vi/${directYtId}/hqdefault.jpg`,
@@ -1274,109 +1309,47 @@
           return;
         }
 
-        // 2. Ссылка Apple Music -> извлекаем метаданные через iTunes
+        // Apple Music -> iTunes парсер
         if (rawInput.includes('music.apple.com')) {
           const trackMatch = rawInput.match(/i=(\d+)/) || rawInput.match(/\/song\/[^\/]+\/(\d+)/);
           if (trackMatch && trackMatch[1]) {
             try {
               const itunesRes = await fetch(`https://itunes.apple.com/lookup?id=${trackMatch[1]}`);
               const itunesData = await itunesRes.json();
-              if (itunesData.results && itunesData.results.length > 0) {
-                const item = itunesData.results[0];
-                finalQuery = `${item.artistName} - ${item.trackName}`;
+              if (itunesData.results?.[0]) {
+                finalQuery = `${itunesData.results[0].artistName} - ${itunesData.results[0].trackName}`;
               }
             } catch (err) {}
           }
         } 
-        // 3. Ссылка Яндекс Музыки
+        // Яндекс Музыка
         else if (rawInput.includes('music.yandex.ru')) {
           const matchY = rawInput.match(/track\/(\d+)/);
           finalQuery = rawInput.replace(/https?:\/\/music\.yandex\.ru[^\s]+/gi, '').trim() || (matchY ? `track ${matchY[1]}` : rawInput);
         }
 
-        let foundList = [];
+        // Запуск поиска по живым зеркалам
+        const results = await fetchFastestYouTube(finalQuery);
+        renderSearchResults(results);
 
-        // СПОСОБ 1: Опрос рабочих зеркал Invidious с авто-таймаутом 2.5 сек
-        const activeMirrors = [
-          'https://inv.tux.pizza',
-          'https://invidious.jing.rocks',
-          'https://vid.priv.au'
-        ];
+      } catch (err) {
+        console.warn("Зеркала не ответили, переходим в умный резерв:", err);
 
-        for (const mirror of activeMirrors) {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2500);
-            const res = await fetch(`${mirror}/api/v1/search?q=${encodeURIComponent(finalQuery)}&type=video`, {
-              signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            if (res.ok) {
-              const items = await res.json();
-              if (Array.isArray(items) && items.length > 0) {
-                foundList = items.slice(0, 6).map(item => ({
-                  title: item.title,
-                  artist: item.author || 'Исполнитель',
-                  youtubeId: item.videoId,
-                  artwork: item.videoThumbnails?.[0]?.url || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
-                  duration: formatTime(item.lengthSeconds || 200)
-                }));
-                break;
-              }
-            }
-          } catch (e) {}
-        }
-
-        // СПОСОБ 2: Резерв через AllOrigins
-        if (foundList.length === 0) {
-          try {
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://www.youtube.com/results?search_query=' + finalQuery)}`;
-            const res = await fetch(proxyUrl);
-            if (res.ok) {
-              const json = await res.json();
-              const html = json.contents || '';
-              const matches = [...html.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g)].map(m => m[1]);
-              const uniqueIds = [...new Set(matches)].slice(0, 5);
-
-              if (uniqueIds.length > 0) {
-                foundList = uniqueIds.map((vId, idx) => ({
-                  title: `${finalQuery} (Трек #${idx + 1})`,
-                  artist: 'YouTube Music',
-                  youtubeId: vId,
-                  artwork: `https://i.ytimg.com/vi/${vId}/hqdefault.jpg`,
-                  duration: 'Full'
-                }));
-              }
-            }
-          } catch (e) {}
-        }
-
-        // СПОСОБ 3: iTunes Fallback
-        if (foundList.length === 0) {
-          const itunesFallback = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(finalQuery)}&entity=song&limit=5`);
-          const itunesJson = await itunesFallback.json();
+        // Резервный поиск через iTunes метаданные с автоматическим добавлением в 1 клик
+        try {
+          const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(inputSmartQuery.value.trim())}&entity=song&limit=4`);
+          const itunesJson = await itunesRes.json();
           if (itunesJson.results && itunesJson.results.length > 0) {
             renderiTunesFallback(itunesJson.results);
             return;
           }
-        }
+        } catch (e) {}
 
-        if (foundList.length > 0) {
-          renderSearchResults(foundList);
-        } else {
-          smartResultsContainer.innerHTML = `
-            <div class="text-center p-6 text-slate-400 text-xs bg-dark-bg/80 border border-dark-border rounded-2xl">
-              <i class="fa-brands fa-youtube text-2xl mb-2 text-red-500"></i>
-              <p class="font-semibold text-white">Трек не найден</p>
-              <p class="text-[11px] mt-1 text-slate-400">Вставьте прямую ссылку на видео с YouTube или уточните запрос.</p>
-            </div>
-          `;
-        }
-      } catch (err) {
         smartResultsContainer.innerHTML = `
-          <div class="text-center p-6 text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-2xl">
-            <p>Ошибка соединения. Попробуйте вставить прямую ссылку на YouTube.</p>
+          <div class="text-center p-6 text-slate-400 text-xs bg-dark-bg/80 border border-dark-border rounded-2xl">
+            <i class="fa-brands fa-youtube text-2xl mb-2 text-red-500"></i>
+            <p class="font-semibold text-white">Трек не найден автоматически</p>
+            <p class="text-[11px] mt-1 text-slate-400">Вставьте прямую ссылку на видео с YouTube в поле выше.</p>
           </div>
         `;
       } finally {
@@ -1397,10 +1370,10 @@
             <div class="truncate">
               <h4 class="text-xs font-bold text-white truncate group-hover:text-brand-accent transition">${escapeHtml(item.title)}</h4>
               <p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.artist)}</p>
-              <span class="text-[10px] text-red-400 font-mono"><i class="fa-brands fa-youtube mr-1"></i>Полный трек (${item.duration})</span>
+              <span class="text-[10px] text-red-400 font-mono"><i class="fa-brands fa-youtube mr-1"></i>${item.duration}</span>
             </div>
           </div>
-          <button class="btn-add-track px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs flex items-center space-x-1 shadow-md active:scale-95 transition shrink-0">
+          <button class="btn-add-track px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md active:scale-95 transition shrink-0">
             <i class="fa-solid fa-plus text-[10px]"></i>
             <span>В эфир</span>
           </button>
@@ -1438,14 +1411,33 @@
               <p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.artistName)}</p>
             </div>
           </div>
-          <button class="btn-add-fallback px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent text-white font-bold text-xs flex items-center space-x-1 shrink-0">
-            <span>Искать YouTube</span>
+          <button class="btn-add-fallback px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-accent hover:brightness-110 text-white font-bold text-xs flex items-center space-x-1 shrink-0">
+            <i class="fa-solid fa-plus text-[10px]"></i>
+            <span>В эфир</span>
           </button>
         `;
 
-        card.querySelector('.btn-add-fallback').addEventListener('click', () => {
-          inputSmartQuery.value = `${item.artistName} ${item.trackName}`;
-          smartMusicSearchForm.dispatchEvent(new Event('submit'));
+        card.querySelector('.btn-add-fallback').addEventListener('click', async (e) => {
+          const btn = e.currentTarget;
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin text-xs"></i>';
+          try {
+            const ytList = await fetchFastestYouTube(`${item.artistName} ${item.trackName}`);
+            if (ytList && ytList[0]) {
+              addTrackToPlaylist({
+                id: 'yt-' + ytList[0].youtubeId,
+                title: item.trackName,
+                artist: item.artistName,
+                youtubeId: ytList[0].youtubeId,
+                artwork: hdArtwork,
+                duration: ytList[0].duration
+              });
+            }
+          } catch (err) {
+            showToast("Не удалось привязать ролик. Вставьте ссылку на YouTube вручную", "warning");
+            btn.disabled = false;
+            btn.innerHTML = '<span>Повторить</span>';
+          }
         });
 
         smartResultsContainer.appendChild(card);
